@@ -1,0 +1,40 @@
+{
+  "name": "mindsave-backend",
+  "version": "1.0.0",
+  "description": "Backend para la aplicación Mindsave desarrollada con Node.js, Express y Mongo DB",
+  "keywords": [
+    "mindsave",
+    "backend"
+  ],
+  "homepage": "https://github.com/XiaoWenMaAlvarez/mindsave-backend#readme",
+  "bugs": {
+    "url": "https://github.com/XiaoWenMaAlvarez/mindsave-backend/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/XiaoWenMaAlvarez/mindsave-backend.git"
+  },
+  "license": "MIT",
+  "author": "Xiao Wen Ma Alvarez",
+  "type": "module",
+  "main": "app.js",
+  "scripts": {
+    "dev": "nodemon",
+    "build": "rimraf ./dist && tsc",
+    "start": "npm run build && node dist/app.js",
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.2.0",
+    "nodemon": "^3.1.11",
+    "rimraf": "^6.1.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "env-var": "^7.5.0",
+    "express": "^5.2.1"
+  }
+}
