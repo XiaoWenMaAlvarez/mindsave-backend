@@ -1,1 +1,1 @@
-// export * from "./carpeta/archivo.js"
+export { Logger } from "./logger.plugin.js";

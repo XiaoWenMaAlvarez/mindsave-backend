@@ -25,15 +25,16 @@
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --watchAll",
     "test:coverage": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --coverage"
-
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
-    "@types/node": "^25.2.0",
+    "@types/node": "^25.2.1",
+    "@types/pg": "^8.16.0",
     "@types/supertest": "^6.0.3",
     "jest": "^30.2.0",
     "nodemon": "^3.1.11",
+    "prisma": "^7.3.0",
     "rimraf": "^6.1.2",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.6",
@@ -41,9 +42,14 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "dotenv": "^17.2.3",
+    "@prisma/adapter-pg": "^7.3.0",
+    "@prisma/client": "^7.3.0",
+    "dotenv": "^17.2.4",
     "env-var": "^7.5.0",
     "express": "^5.2.1",
-    "winston": "^3.19.0"
+    "pg": "^8.18.0",
+    "winston": "^3.19.0",
+    "zod": "^4.3.6",
+    "zod-validation-error": "^5.0.0"
   }
 }

@@ -1,4 +1,5 @@
 .vscode
+/postgres/
 # Logs
 logs
 *.log
@@ -138,3 +139,9 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+/src/generated/prisma
+
+# Prisma
+*.db
+*.db-journal

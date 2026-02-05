@@ -1,0 +1,72 @@
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+model Depresion {
+  id                    Int                     @id @default(autoincrement())
+  tristeza              Int
+  desesperanza          Int
+  bajaAutoestima        Int
+  faltaDeValor          Int
+  perdidaDeSatisfaccion Int
+  testBreve             TestBreveEstadoDeAnimo?
+}
+
+model ImpulsoSuicida {
+  id                   Int                     @id @default(autoincrement())
+  pensamientosSuicidas Int
+  deseosDeMorir        Int
+  testBreve            TestBreveEstadoDeAnimo?
+}
+
+model SentimientosAnsiedadFisica {
+  id                      Int                     @id @default(autoincrement())
+  palpitaciones           Int
+  sudoracion              Int
+  temblores               Int
+  dificultadRespirar      Int
+  ahogo                   Int
+  dolorPecho              Int
+  nauseas                 Int
+  mareos                  Int
+  sensacionIrrealidad     Int
+  inestabilidadHormigueos Int
+  testBreve               TestBreveEstadoDeAnimo?
+}
+
+model SentimientosAnsiedadEmocional {
+  id         Int                     @id @default(autoincrement())
+  angustiado Int
+  nervioso   Int
+  preocupado Int
+  asustado   Int
+  tenso      Int
+  testBreve  TestBreveEstadoDeAnimo?
+}
+
+model TestBreveEstadoDeAnimo {
+  id                  String                        @id @default(uuid())
+  
+  depresionId         Int                           @unique
+  depresion           Depresion                     @relation(fields: [depresionId], references: [id])
+
+  impulsoSuicidaId    Int                           @unique
+  impulsoSuicida      ImpulsoSuicida                @relation(fields: [impulsoSuicidaId], references: [id])
+
+  ansiedadFisicaId    Int                           @unique
+  ansiedadFisica      SentimientosAnsiedadFisica    @relation(fields: [ansiedadFisicaId], references: [id])
+
+  ansiedadEmocionalId Int                           @unique
+  ansiedadEmocional   SentimientosAnsiedadEmocional @relation(fields: [ansiedadEmocionalId], references: [id])
+  
+  idUsuario           String
+  fecha               DateTime                      @default(now())
+  notas               String?
+}

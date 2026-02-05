@@ -4,15 +4,28 @@ export interface impulsoSuicidaTestBreveOptions {
   pensamientosSuicidas: opcionesValidas;
   deseosDeMorir: opcionesValidas;
 }
-
 export class ImpulsoSuicidaTestBreve {
-  constructor(
-    public pensamientosSuicidas: opcionesValidas,
-    public deseosDeMorir: opcionesValidas,
-  ){}
+  
+  public pensamientosSuicidas: opcionesValidas;
+  public deseosDeMorir: opcionesValidas;
 
-  static fromJson(options: impulsoSuicidaTestBreveOptions): ImpulsoSuicidaTestBreve {
-    return new ImpulsoSuicidaTestBreve(options.pensamientosSuicidas, options.deseosDeMorir);
+  constructor(options: impulsoSuicidaTestBreveOptions){
+    const {pensamientosSuicidas, deseosDeMorir} = options;
+    this.pensamientosSuicidas = pensamientosSuicidas;
+    this.deseosDeMorir = deseosDeMorir;
+  }
+
+  static fromJson(object: {[key: string]: any}): ImpulsoSuicidaTestBreve {
+    const {pensamientosSuicidas, deseosDeMorir} = object;
+    const options = {pensamientosSuicidas, deseosDeMorir};
+    return new ImpulsoSuicidaTestBreve(options);
+  }
+
+  toJson() {
+    return {
+      pensamientosSuicidas: this.pensamientosSuicidas,
+      deseosDeMorir: this.deseosDeMorir
+    }
   }
 
 }

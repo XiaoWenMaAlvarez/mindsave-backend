@@ -1,1 +1,1 @@
-// export * from "./carpeta/archivo.js"
+export { envs } from "./envs.js";

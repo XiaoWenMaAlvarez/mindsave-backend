@@ -1,0 +1,1 @@
+export { prisma } from "./postgres/index.js";
