@@ -9,7 +9,7 @@ export interface tesBreveEstadoDeAnimoOptions {
   ansiedadEmocional: SentimientosAnsiedadEmocionalTestBreve;
   ansiedadFisica: SentimientosAnsiedadFisicaTestBreve;
   idUsuario: string;
-  fecha?: Date;
+  fecha: Date;
   id?: string;
   notas?: string;
 }
@@ -21,7 +21,7 @@ export class TestBreveEstadoDeAnimo {
   public ansiedadFisica: SentimientosAnsiedadFisicaTestBreve;
   public ansiedadEmocional: SentimientosAnsiedadEmocionalTestBreve;
   public idUsuario: string;
-  public fecha: Date = new Date();
+  public fecha: Date;
   public id?: string;
   public notas?: string;
 
@@ -32,7 +32,7 @@ export class TestBreveEstadoDeAnimo {
     this.ansiedadFisica = ansiedadFisica;
     this.ansiedadEmocional = ansiedadEmocional;
     this.idUsuario = idUsuario;
-    this.fecha = fecha ? fecha : new Date();
+    this.fecha = fecha
     if(id) this.id = id;
     if(notas) this.notas = notas;
   }
@@ -46,8 +46,8 @@ export class TestBreveEstadoDeAnimo {
       ansiedadFisica: SentimientosAnsiedadFisicaTestBreve.fromJson(ansiedadFisica),
       ansiedadEmocional: SentimientosAnsiedadEmocionalTestBreve.fromJson(ansiedadEmocional),
       idUsuario,
+      fecha
     };
-    if(fecha) options.fecha = new Date(fecha);
     if(id) options.id = id;
     if(notas) options.notas = notas;
     

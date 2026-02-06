@@ -1,2 +1,2 @@
-export { CreateTestBreveEstadoDeAnimoDTO } from "./create-testBreveEstadoDeAnimo.dto.js";
+export { TestBreveEstadoDeAnimoDTO } from "./create-testBreveEstadoDeAnimo.dto.js";
 

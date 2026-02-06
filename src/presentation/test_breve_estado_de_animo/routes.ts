@@ -13,6 +13,12 @@ export class TestBreveEstadoDeAnimoRouter {
     const testBreveEstadoDeAnimoController = new TestBreveEstadoDeAnimoController(testBreveEstadoDeAnimoRepository);
 
     router.post("/", testBreveEstadoDeAnimoController.saveTestBreveEstadoDeAnimo);
+    router.get("/by-year/:year", testBreveEstadoDeAnimoController.getTestBreveEstadoDeAnimoByYear);
+    router.put("", testBreveEstadoDeAnimoController.editarTestBreveEstadoDeAnimoDeHoy);
+
+    router.delete("/:year/:month/:day", testBreveEstadoDeAnimoController.eliminarTestBreveEstadoDeAnimoDeHoy);
+    router.get("/by-date/:year/:month/:day", testBreveEstadoDeAnimoController.getTodayTestBreveEstadoDeAnimo);
+
 
     return router;
   }

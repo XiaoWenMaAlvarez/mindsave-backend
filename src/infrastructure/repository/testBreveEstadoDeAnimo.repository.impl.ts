@@ -18,14 +18,12 @@ export class TestBreveEstadoDeAnimoRepositoryImpl implements TestBreveEstadoDeAn
   editarTestBreveEstadoDeAnimoDeHoy(testBreve: TestBreveEstadoDeAnimo): Promise<void> {
     return this.testBreveEstadoDeAnimoDatasource.editarTestBreveEstadoDeAnimoDeHoy(testBreve);
   }
-  eliminarTestBreveEstadoDeAnimoDeHoy(): Promise<void> {
-    return this.testBreveEstadoDeAnimoDatasource.eliminarTestBreveEstadoDeAnimoDeHoy();
+  eliminarTestBreveEstadoDeAnimoDeHoy(year: number, month: number, day: number): Promise<void> {
+    return this.testBreveEstadoDeAnimoDatasource.eliminarTestBreveEstadoDeAnimoDeHoy(year, month, day);
   }
-  isTestBreveRealizadoHoy(): Promise<boolean> {
-    return this.testBreveEstadoDeAnimoDatasource.isTestBreveRealizadoHoy();
-  }
-  getTodayTestBreveEstadoDeAnimo(): Promise<TestBreveEstadoDeAnimo | undefined> {
-    return this.testBreveEstadoDeAnimoDatasource.getTodayTestBreveEstadoDeAnimo();
+
+  getTodayTestBreveEstadoDeAnimo(year: number, month: number, day: number): Promise<TestBreveEstadoDeAnimo | null> {
+    return this.testBreveEstadoDeAnimoDatasource.getTodayTestBreveEstadoDeAnimo(year, month, day);
   }
 
   

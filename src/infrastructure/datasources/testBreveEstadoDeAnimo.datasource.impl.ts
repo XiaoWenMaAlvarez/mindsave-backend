@@ -29,23 +29,67 @@ export class TestBreveEstadoDeAnimoDatasourceImpl implements TestBreveEstadoDeAn
   }
 
   async getTestBreveEstadoDeAnimoByYear(year: number): Promise<TestBreveEstadoDeAnimo[]> {
-    throw new Error('Method not implemented.');
+    const startDate = new Date(year, 0, 1);
+    const endDate = new Date(year + 1, 0, 1);
+
+    const tests = await prisma.testBreveEstadoDeAnimo.findMany({
+      where: {
+        fecha: {
+          gte: startDate,
+          lt: endDate,
+        }
+      },
+      include: {
+        depresion: true,
+        impulsoSuicida: true,
+        ansiedadFisica: true,
+        ansiedadEmocional: true,
+      }
+    });
+
+    return tests.map(test => TestBreveEstadoDeAnimo.fromJson(test));
   }
 
   async editarTestBreveEstadoDeAnimoDeHoy(testBreve: TestBreveEstadoDeAnimo): Promise<void> {
-    throw new Error('Method not implemented.');
+    await this.eliminarTestBreveEstadoDeAnimoDeHoy(testBreve.fecha.getFullYear(), testBreve.fecha.getMonth() + 1, testBreve.fecha.getDate());
+    await this.saveTestBreveEstadoDeAnimo(testBreve);
   }
   
-  async eliminarTestBreveEstadoDeAnimoDeHoy(): Promise<void> {
-    throw new Error('Method not implemented.');
+  async eliminarTestBreveEstadoDeAnimoDeHoy(year: number, month: number, day: number): Promise<void> {
+    const startDate = new Date(year, month-1, day);
+    const endDate = new Date(year, month-1, day + 1);
+
+    await prisma.testBreveEstadoDeAnimo.deleteMany({
+      where: {
+        fecha: {
+          gte: startDate,
+          lt: endDate,
+        }
+      }
+    });
   }
   
-  async isTestBreveRealizadoHoy(): Promise<boolean> {
-    throw new Error('Method not implemented.');
-  }
-  
-  async getTodayTestBreveEstadoDeAnimo(): Promise<TestBreveEstadoDeAnimo | undefined> {
-    throw new Error('Method not implemented.');
+  async getTodayTestBreveEstadoDeAnimo(year: number, month: number, day: number): Promise<TestBreveEstadoDeAnimo | null> {
+    const startDate = new Date(year, month-1, day);
+    const endDate = new Date(year, month-1, day + 1);
+
+    const test = await prisma.testBreveEstadoDeAnimo.findFirst({
+      where: {
+        fecha: {
+          gte: startDate,
+          lt: endDate,
+        }
+      },
+      include: {
+        depresion: true,
+        impulsoSuicida: true,
+        ansiedadFisica: true,
+        ansiedadEmocional: true,
+      }
+    });
+
+    if (!test) return null;
+    return TestBreveEstadoDeAnimo.fromJson(test);
   }
   
 }

@@ -17,6 +17,7 @@ model Depresion {
   faltaDeValor          Int
   perdidaDeSatisfaccion Int
   testBreve             TestBreveEstadoDeAnimo?
+  @@map("depresion")
 }
 
 model ImpulsoSuicida {
@@ -24,6 +25,8 @@ model ImpulsoSuicida {
   pensamientosSuicidas Int
   deseosDeMorir        Int
   testBreve            TestBreveEstadoDeAnimo?
+  @@map("impulso_suicida")
+
 }
 
 model SentimientosAnsiedadFisica {
@@ -39,6 +42,8 @@ model SentimientosAnsiedadFisica {
   sensacionIrrealidad     Int
   inestabilidadHormigueos Int
   testBreve               TestBreveEstadoDeAnimo?
+
+  @@map("sentimientos_ansiedad_fisica")
 }
 
 model SentimientosAnsiedadEmocional {
@@ -49,6 +54,8 @@ model SentimientosAnsiedadEmocional {
   asustado   Int
   tenso      Int
   testBreve  TestBreveEstadoDeAnimo?
+
+  @@map("sentimientos_ansiedad_emocional")
 }
 
 model TestBreveEstadoDeAnimo {
@@ -69,4 +76,6 @@ model TestBreveEstadoDeAnimo {
   idUsuario           String
   fecha               DateTime                      @default(now())
   notas               String?
+
+  @@map("test_breve_estado_de_animo")
 }
