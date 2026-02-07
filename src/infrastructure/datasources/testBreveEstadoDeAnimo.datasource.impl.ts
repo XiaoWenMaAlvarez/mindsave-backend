@@ -59,12 +59,47 @@ export class TestBreveEstadoDeAnimoDatasourceImpl implements TestBreveEstadoDeAn
     const startDate = new Date(year, month-1, day);
     const endDate = new Date(year, month-1, day + 1);
 
+    const testParaEliminar = await prisma.testBreveEstadoDeAnimo.findFirst({
+      where: {
+        fecha: {
+          gte: startDate,
+          lt: endDate,
+        }
+      },
+    });
+
+    if(testParaEliminar == null) return;
+
     await prisma.testBreveEstadoDeAnimo.deleteMany({
       where: {
         fecha: {
           gte: startDate,
           lt: endDate,
         }
+      }
+    });
+
+    await prisma.impulsoSuicida.delete({
+      where: {
+        id: testParaEliminar.impulsoSuicidaId
+      }
+    });
+
+    await prisma.depresion.delete({
+      where: {
+        id: testParaEliminar.depresionId
+      }
+    });
+
+    await prisma.sentimientosAnsiedadEmocional.delete({
+      where: {
+        id: testParaEliminar.ansiedadEmocionalId
+      }
+    });
+
+    await prisma.sentimientosAnsiedadFisica.delete({
+      where: {
+        id: testParaEliminar.ansiedadFisicaId
       }
     });
   }
