@@ -1,7 +1,7 @@
 import { type Request, type Response } from 'express';
-import { TestBreveEstadoDeAnimoDTO } from '../validators/ini.js';
 import { Logger } from '../../plugins/logger.plugin.js';
 import { CreateTestBreveEstadoDeAnimoUseCase, CustomError, TestBreveEstadoDeAnimoRepository, GetTestBreveEstadoDeAnimoByYearUseCase, EliminarTestBreveEstadoDeAnimoDeHoyUseCase, EditarTestBreveEstadoDeAnimoDeHoyUseCase, GetTodayTestBreveEstadoDeAnimoUseCase, TestBreveEstadoDeAnimo } from '../../domain/init.js';
+import { TestBreveEstadoDeAnimoDTO } from '../validators/dtos/init.js';
 
 export class TestBreveEstadoDeAnimoController {
 

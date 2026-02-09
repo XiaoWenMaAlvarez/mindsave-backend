@@ -73,9 +73,37 @@ model TestBreveEstadoDeAnimo {
   ansiedadEmocionalId Int                           @unique
   ansiedadEmocional   SentimientosAnsiedadEmocional @relation(fields: [ansiedadEmocionalId], references: [id])
   
-  idUsuario           String
+  idUsuario           String //TODO: CAMBIAR ESTO
   fecha               DateTime                      @default(now())
   notas               String?
 
   @@map("test_breve_estado_de_animo")
+}
+
+enum TipoRol {
+  PROFESIONAL_ROL
+  USER_ROL
+}
+
+model Role {
+  id                  Int                     @id @default(autoincrement())
+  description         TipoRol                  @unique
+  @@map("role")
+  users User[]
+}
+
+
+model User {
+  id                  String               @id @default(uuid())
+  email               String               @unique
+  name                String                           
+  emailVerified       Boolean              @default(false)
+  password            String                
+  roleId              Int
+  
+  role                Role                 @relation(fields: [roleId], references: [id])
+  isActive            Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  @@map("user")
 }

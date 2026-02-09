@@ -1,5 +1,5 @@
-import { TestBreveEstadoDeAnimo } from "../../domain/entities/init.js";
-import { isValidEsquemaTestBreveEstadoDeAnimo } from "./schemas/testBreveEstadoDeAnimo.schema.js";
+import { TestBreveEstadoDeAnimo } from "../../../../domain/entities/init.js";
+import { isValidEsquemaTestBreveEstadoDeAnimo } from "../../schemas/test_breve_estado_de_animo/testBreveEstadoDeAnimo.schema.js";
 
 
 export class TestBreveEstadoDeAnimoDTO {

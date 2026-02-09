@@ -5,7 +5,7 @@ import { prisma } from "../../data/index.js";
 
 export class TestBreveEstadoDeAnimoDatasourceImpl implements TestBreveEstadoDeAnimoDatasource {
 
-  //TODO: IMPLEMENTAR
+  //TODO: IMPLEMENTAR LÓGICA PARA VERIFICAR EL ID DEL USUARIO
   async saveTestBreveEstadoDeAnimo(testBreve: TestBreveEstadoDeAnimo): Promise<void> {
     await prisma.testBreveEstadoDeAnimo.create({
       data: {
@@ -70,38 +70,28 @@ export class TestBreveEstadoDeAnimoDatasourceImpl implements TestBreveEstadoDeAn
 
     if(testParaEliminar == null) return;
 
-    await prisma.testBreveEstadoDeAnimo.deleteMany({
-      where: {
-        fecha: {
-          gte: startDate,
-          lt: endDate,
+    await prisma.$transaction([
+      prisma.testBreveEstadoDeAnimo.deleteMany({
+        where: {
+          fecha: {
+            gte: startDate,
+            lt: endDate,
+          }
         }
-      }
-    });
-
-    await prisma.impulsoSuicida.delete({
-      where: {
-        id: testParaEliminar.impulsoSuicidaId
-      }
-    });
-
-    await prisma.depresion.delete({
-      where: {
-        id: testParaEliminar.depresionId
-      }
-    });
-
-    await prisma.sentimientosAnsiedadEmocional.delete({
-      where: {
-        id: testParaEliminar.ansiedadEmocionalId
-      }
-    });
-
-    await prisma.sentimientosAnsiedadFisica.delete({
-      where: {
-        id: testParaEliminar.ansiedadFisicaId
-      }
-    });
+      }),
+      prisma.impulsoSuicida.delete({
+        where: { id: testParaEliminar.impulsoSuicidaId }
+      }),
+      prisma.depresion.delete({
+        where: { id: testParaEliminar.depresionId }
+      }),
+      prisma.sentimientosAnsiedadEmocional.delete({
+        where: { id: testParaEliminar.ansiedadEmocionalId }
+      }),
+      prisma.sentimientosAnsiedadFisica.delete({
+        where: { id: testParaEliminar.ansiedadFisicaId }
+      })
+    ]);
   }
   
   async getTodayTestBreveEstadoDeAnimo(year: number, month: number, day: number): Promise<TestBreveEstadoDeAnimo | null> {
