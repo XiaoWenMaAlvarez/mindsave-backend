@@ -49,22 +49,39 @@ export class AuthController {
     if(error) return res.status(400).json({error});
     this.userRepository.login(userLogin!.email, userLogin!.password)
       .then((result: UserEntity | String) => {
-        if(typeof result === 'string') return res.status(400).json({error: result});
+        if(typeof result === 'string') {
+          if(result === "EMAIL_NOT_VERIFIED") return res.status(401).json({error: result})
+          return res.status(400).json({error: result})
+        };
         if(result instanceof UserEntity) {
           const {password, ...user} = result.toJson();
           const token = JwtAdapter.generateToken({id: user.id, email: user.email, name: user.name});
           if(!token) throw CustomError.internalServerError("Error generating token");
           return res.status(200).json({
-            user,
+            id: user.id,
+            email: user.email,
+            name: user.name,
             token
           });
         }
       })
-      .catch(error => this.handleError(res, error));
+      .catch(error => this.handleError(error, res));
   }
 
-  logOut = (req: Request, res: Response) => {
-    res.json("logOut");
+  checkStatus = (req: Request, res: Response) => {
+    try {
+      const { id, email, name } = req.body.payload;
+      const token = JwtAdapter.generateToken({ id, email, name });
+      if(!token) throw CustomError.internalServerError("Error generating token");
+      return res.status(200).json({
+        id,
+        email,
+        name,
+        token
+      });
+    } catch (error) {
+      this.handleError(error, res);
+    }
   }
 
 }

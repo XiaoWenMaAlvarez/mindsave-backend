@@ -3,6 +3,7 @@ import { AuthController } from './controller.js';
 import { UserDatasourceImpl, UserRepositoryImpl } from '../../infrastructure/init.js';
 import { EmailService } from '../../config/nodemailer.adapter.js';
 import { envs } from '../../config/envs.js';
+import { AuthMiddleware } from '../middlewares/auth.middlewares.js';
 
 export class AuthRouter {
 
@@ -24,7 +25,7 @@ export class AuthRouter {
     router.post("/login", authController.loginUser);
     router.post("/register", authController.registerUser);
     router.get("/validate-email/:token", authController.validateEmail);
-    router.post("/logout", authController.logOut);
+    router.get("/check-status", [AuthMiddleware.validateJWT], authController.checkStatus);
 
     return router;
   }

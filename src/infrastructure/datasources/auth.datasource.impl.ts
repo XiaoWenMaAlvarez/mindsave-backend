@@ -47,7 +47,7 @@ export class UserDatasourceImpl implements UserDatasource {
     const isMatch = bcryptAdapter.compare(password, user.password);
     if(!isMatch) return "Invalid password";
 
-    if(!user.emailVerified) return "Por favor, verifique su email";
+    if(!user.emailVerified) return "EMAIL_NOT_VERIFIED";
 
     user.password = "";
 
