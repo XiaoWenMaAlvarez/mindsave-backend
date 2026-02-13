@@ -1,2 +1,2 @@
-export { TestBreveEstadoDeAnimoRepository } from "./testBreveEstadoDeAnimo.repository.js";
-export {UserRepository} from './auth.repository.js';
+export * from "./testBreveEstadoDeAnimo.repository.js";
+export * from './auth.repository.js';

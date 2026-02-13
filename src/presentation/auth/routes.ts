@@ -20,11 +20,19 @@ export class AuthRouter {
 
     const verifyEmailUrl = `${envs.WEBSERVICE_URL}/api/auth/validate-email`;
 
-    const authController = new AuthController(userRepository, emailService, verifyEmailUrl);
+    const resetPasswordUrl = `${envs.WEBSERVICE_URL}/api/auth/reset-password`;
+
+    const authController = new AuthController(userRepository, emailService, verifyEmailUrl, resetPasswordUrl);
 
     router.post("/login", authController.loginUser);
     router.post("/register", authController.registerUser);
     router.get("/validate-email/:token", authController.validateEmail);
+    
+    router.post("/reset-password", authController.resetPassword);
+    router.get("/reset-password/:token", authController.resetPasswordWithTokenPage);
+    router.post("/reset-password/:token", authController.resetPasswordWithToken);
+    
+
     router.get("/check-status", [AuthMiddleware.validateJWT], authController.checkStatus);
 
     return router;

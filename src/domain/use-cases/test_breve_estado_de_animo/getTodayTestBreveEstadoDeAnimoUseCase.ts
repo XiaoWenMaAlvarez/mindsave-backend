@@ -1,4 +1,4 @@
-import type { TestBreveEstadoDeAnimo, TestBreveEstadoDeAnimoRepository } from "../init.js";
+import type { TestBreveEstadoDeAnimo, TestBreveEstadoDeAnimoRepository } from "../../init.js";
 
 export interface GetTodayTestBreveEstadoDeAnimoInterface {
   execute(year: number, month: number, day: number): Promise<TestBreveEstadoDeAnimo | null>;

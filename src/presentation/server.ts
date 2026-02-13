@@ -1,4 +1,6 @@
 import express, { Router } from 'express';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 interface Options {
   port: number;
@@ -20,6 +22,8 @@ export class Server {
 
   async start() {
     this.app.use( express.json() );
+    
+    this.app.use( express.urlencoded({ extended: true }) ); // Para el formulario de recuperar contraseña
 
     this.app.use( this.routes );
     

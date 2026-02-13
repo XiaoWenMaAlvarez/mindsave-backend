@@ -6,7 +6,61 @@ import { bcryptAdapter } from '../../config/bcrypt.adapter.js';
 
 export class UserDatasourceImpl implements UserDatasource {
 
-  async register(user: UserEntity): Promise<String | null> {
+  async verifyUserByEmailAndToken(email: string, token: string): Promise<boolean | null> {
+    try {
+      const user = await prisma.user.findUnique({
+        where: {
+          email: email,
+          resetToken: token,
+          resetTokenExpiration: {
+            gt: new Date()
+          }
+        }
+      });
+      if(user == null) return false;
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async resetPassword(email: string, token: string, newPassword: string): Promise<boolean> {
+    try {
+      const user = await prisma.user.findUnique({
+        where: {
+          email: email,
+          resetToken: token,
+          resetTokenExpiration: {
+            gt: new Date()
+          }
+        }
+      });
+      if(user == null) return false;
+      await prisma.user.update({
+        where: { email: email },
+        data: {
+          password: newPassword,
+          resetToken: null,
+          resetTokenExpiration: null
+        }
+      });
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async createResetPasswordToken(email: string, token: string, tokenTimeAliveMinutes: number): Promise<void> {
+    await prisma.user.update({
+      where: { email: email },
+      data: {
+        resetToken: token,
+        resetTokenExpiration: new Date(Date.now() + tokenTimeAliveMinutes * 60 * 1000)
+      }
+    });
+  }
+
+  async register(user: UserEntity): Promise<string | null> {
     const isEmailRepeat = await prisma.user.findUnique({
       where: {
         email: user.email
@@ -36,7 +90,7 @@ export class UserDatasourceImpl implements UserDatasource {
     return null;
   }
 
-  async login(email: string, password: string): Promise<UserEntity | String> {
+  async login(email: string, password: string): Promise<UserEntity | string> {
     const user = await prisma.user.findUnique({
       where: {
         email: email
@@ -54,6 +108,7 @@ export class UserDatasourceImpl implements UserDatasource {
     return UserEntity.fromJson(user);
 
   }
+  
   async validateEmail(email: string): Promise<boolean> {
     try {
       await prisma.user.update({
@@ -65,6 +120,19 @@ export class UserDatasourceImpl implements UserDatasource {
       return false;
     }
   }
-  
+
+  async verifyUserByEmail(email: string): Promise<boolean | null> {
+    try {
+      const isEmailRepeat = await prisma.user.findUnique({
+        where: {
+          email: email
+        }
+      });
+      if(isEmailRepeat != null) return true;
+      return false;
+    } catch (error) {
+      return null;
+    }
+  }
   
 }

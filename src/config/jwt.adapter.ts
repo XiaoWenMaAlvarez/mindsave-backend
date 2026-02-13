@@ -22,7 +22,6 @@ export class JwtAdapter {
       const decoded = jwt.verify(token, JWT_SEED);
       return decoded as T;
     } catch (error) {
-      Logger.error(`${error}`);
       return null;
     }
   }

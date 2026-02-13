@@ -1,1 +1,1 @@
-export { prisma } from "./postgres/index.js";
+export * from "./postgres/index.js";

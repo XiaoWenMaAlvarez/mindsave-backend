@@ -1,4 +1,4 @@
-import type { TestBreveEstadoDeAnimo, TestBreveEstadoDeAnimoRepository } from "../init.js";
+import type { TestBreveEstadoDeAnimo, TestBreveEstadoDeAnimoRepository } from "../../init.js";
 
 export interface CreateTestBreveEstadoDeAnimoUseCaseInterface {
   execute(reg: TestBreveEstadoDeAnimo): Promise<void>;

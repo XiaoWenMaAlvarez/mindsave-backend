@@ -1,7 +1,7 @@
 import { type Request, type Response, Router } from 'express';
 import { TestBreveEstadoDeAnimoRouter } from './test_breve_estado_de_animo/routes.js';
 import { AuthRouter } from './auth/routes.js';
-
+import fs from 'node:fs';
 
 export class AppRoutes {
 
