@@ -5,13 +5,34 @@ import { prisma } from "../../data/index.js";
 
 export class TestBreveEstadoDeAnimoDatasourceImpl implements TestBreveEstadoDeAnimoDatasource {
 
-  //TODO: IMPLEMENTAR LÓGICA PARA VERIFICAR EL ID DEL USUARIO
   async saveTestBreveEstadoDeAnimo(testBreve: TestBreveEstadoDeAnimo): Promise<void> {
+    const user = await prisma.user.findUnique({
+      where: {id: testBreve.idUsuario}
+    });
+    if(user == null) return;
+
+    const startDate = new Date(testBreve.fecha.getFullYear(), testBreve.fecha.getMonth(), testBreve.fecha.getDate());
+    const endDate = new Date(testBreve.fecha.getFullYear(), testBreve.fecha.getMonth(), testBreve.fecha.getDate() + 1);
+
+    const isTestRealizado = await prisma.testBreveEstadoDeAnimo.findFirst({
+      where: {
+        fecha: {
+          gte: startDate,
+          lt: endDate,
+        },
+        idUsuario: testBreve.idUsuario
+      },
+    });
+
+    if(isTestRealizado) return this.editarTestBreveEstadoDeAnimoDeHoy(testBreve);
+
     await prisma.testBreveEstadoDeAnimo.create({
       data: {
-        idUsuario: testBreve.idUsuario,
         notas: testBreve.notas ?? null,
         fecha: testBreve.fecha,
+        user: {
+          connect: { id: user.id }
+        },
         depresion: {
           create: testBreve.depresion.toJson()
         },
@@ -28,7 +49,7 @@ export class TestBreveEstadoDeAnimoDatasourceImpl implements TestBreveEstadoDeAn
     });
   }
 
-  async getTestBreveEstadoDeAnimoByYear(year: number): Promise<TestBreveEstadoDeAnimo[]> {
+  async getTestBreveEstadoDeAnimoByYear(year: number, userId: string): Promise<TestBreveEstadoDeAnimo[]> {
     const startDate = new Date(year, 0, 1);
     const endDate = new Date(year + 1, 0, 1);
 
@@ -37,7 +58,8 @@ export class TestBreveEstadoDeAnimoDatasourceImpl implements TestBreveEstadoDeAn
         fecha: {
           gte: startDate,
           lt: endDate,
-        }
+        },
+        idUsuario: userId
       },
       include: {
         depresion: true,
@@ -51,11 +73,11 @@ export class TestBreveEstadoDeAnimoDatasourceImpl implements TestBreveEstadoDeAn
   }
 
   async editarTestBreveEstadoDeAnimoDeHoy(testBreve: TestBreveEstadoDeAnimo): Promise<void> {
-    await this.eliminarTestBreveEstadoDeAnimoDeHoy(testBreve.fecha.getFullYear(), testBreve.fecha.getMonth() + 1, testBreve.fecha.getDate());
+    await this.eliminarTestBreveEstadoDeAnimoDeHoy(testBreve.fecha.getFullYear(), testBreve.fecha.getMonth() + 1, testBreve.fecha.getDate(), testBreve.idUsuario);
     await this.saveTestBreveEstadoDeAnimo(testBreve);
   }
   
-  async eliminarTestBreveEstadoDeAnimoDeHoy(year: number, month: number, day: number): Promise<void> {
+  async eliminarTestBreveEstadoDeAnimoDeHoy(year: number, month: number, day: number, userId: string): Promise<void> {
     const startDate = new Date(year, month-1, day);
     const endDate = new Date(year, month-1, day + 1);
 
@@ -64,7 +86,8 @@ export class TestBreveEstadoDeAnimoDatasourceImpl implements TestBreveEstadoDeAn
         fecha: {
           gte: startDate,
           lt: endDate,
-        }
+        },
+        idUsuario: userId
       },
     });
 
@@ -76,7 +99,8 @@ export class TestBreveEstadoDeAnimoDatasourceImpl implements TestBreveEstadoDeAn
           fecha: {
             gte: startDate,
             lt: endDate,
-          }
+          },
+          idUsuario: userId
         }
       }),
       prisma.impulsoSuicida.delete({
@@ -94,7 +118,7 @@ export class TestBreveEstadoDeAnimoDatasourceImpl implements TestBreveEstadoDeAn
     ]);
   }
   
-  async getTodayTestBreveEstadoDeAnimo(year: number, month: number, day: number): Promise<TestBreveEstadoDeAnimo | null> {
+  async getTodayTestBreveEstadoDeAnimo(year: number, month: number, day: number, userId: string): Promise<TestBreveEstadoDeAnimo | null> {
     const startDate = new Date(year, month-1, day);
     const endDate = new Date(year, month-1, day + 1);
 
@@ -103,7 +127,8 @@ export class TestBreveEstadoDeAnimoDatasourceImpl implements TestBreveEstadoDeAn
         fecha: {
           gte: startDate,
           lt: endDate,
-        }
+        },
+        idUsuario: userId
       },
       include: {
         depresion: true,

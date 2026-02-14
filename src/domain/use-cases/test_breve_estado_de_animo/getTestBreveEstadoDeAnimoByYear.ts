@@ -1,7 +1,7 @@
 import type { TestBreveEstadoDeAnimo, TestBreveEstadoDeAnimoRepository } from "../../init.js";
 
 export interface GetTestBreveEstadoDeAnimoByYear {
-  execute(year: number): Promise<TestBreveEstadoDeAnimo[]>;
+  execute(year: number, userId: string): Promise<TestBreveEstadoDeAnimo[]>;
 }
 
 export class GetTestBreveEstadoDeAnimoByYearUseCase implements GetTestBreveEstadoDeAnimoByYear{
@@ -9,7 +9,7 @@ export class GetTestBreveEstadoDeAnimoByYearUseCase implements GetTestBreveEstad
     private readonly repository: TestBreveEstadoDeAnimoRepository
   ){}
 
-  execute(year: number) {
-    return this.repository.getTestBreveEstadoDeAnimoByYear(year);
+  execute(year: number, userId: string) {
+    return this.repository.getTestBreveEstadoDeAnimoByYear(year, userId);
   }
 }

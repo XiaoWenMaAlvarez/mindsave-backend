@@ -37,7 +37,7 @@ const testBreveEstadoDeAnimoSchema = z.object({
     asustado: scoreSchema,
     tenso: scoreSchema,
   }, "Error con el apartado de ansiedad emocional"),
-  idUsuario: z.string().min(1, "El id de usuario no puede ser un string vacío"),
+  idUsuario: z.uuid("El id de usuario debe ser un uuid"),
   fecha: z.string("La fecha debe ser un string"),
   id: z.string().optional(),
   notas: z.string().optional(),

@@ -73,7 +73,9 @@ model TestBreveEstadoDeAnimo {
   ansiedadEmocionalId Int                           @unique
   ansiedadEmocional   SentimientosAnsiedadEmocional @relation(fields: [ansiedadEmocionalId], references: [id])
   
-  idUsuario           String //TODO: CAMBIAR ESTO
+  idUsuario String
+  user  User   @relation(fields: [idUsuario], references: [id])
+  
   fecha               DateTime                      @default(now())
   notas               String?
 
@@ -105,6 +107,8 @@ model User {
   isActive            Boolean              @default(true)
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
+
+  testsBreveEstadoDeAnimo   TestBreveEstadoDeAnimo[] 
 
   resetToken          String?
   resetTokenExpiration DateTime?

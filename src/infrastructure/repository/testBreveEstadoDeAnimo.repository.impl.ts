@@ -12,18 +12,18 @@ export class TestBreveEstadoDeAnimoRepositoryImpl implements TestBreveEstadoDeAn
     return this.testBreveEstadoDeAnimoDatasource.saveTestBreveEstadoDeAnimo(testBreve);
   }
 
-  getTestBreveEstadoDeAnimoByYear(year: number): Promise<TestBreveEstadoDeAnimo[]> {
-    return this.testBreveEstadoDeAnimoDatasource.getTestBreveEstadoDeAnimoByYear(year);
+  getTestBreveEstadoDeAnimoByYear(year: number, userId: string): Promise<TestBreveEstadoDeAnimo[]> {
+    return this.testBreveEstadoDeAnimoDatasource.getTestBreveEstadoDeAnimoByYear(year, userId);
   }
   editarTestBreveEstadoDeAnimoDeHoy(testBreve: TestBreveEstadoDeAnimo): Promise<void> {
     return this.testBreveEstadoDeAnimoDatasource.editarTestBreveEstadoDeAnimoDeHoy(testBreve);
   }
-  eliminarTestBreveEstadoDeAnimoDeHoy(year: number, month: number, day: number): Promise<void> {
-    return this.testBreveEstadoDeAnimoDatasource.eliminarTestBreveEstadoDeAnimoDeHoy(year, month, day);
+  eliminarTestBreveEstadoDeAnimoDeHoy(year: number, month: number, day: number, userId: string): Promise<void> {
+    return this.testBreveEstadoDeAnimoDatasource.eliminarTestBreveEstadoDeAnimoDeHoy(year, month, day, userId);
   }
 
-  getTodayTestBreveEstadoDeAnimo(year: number, month: number, day: number): Promise<TestBreveEstadoDeAnimo | null> {
-    return this.testBreveEstadoDeAnimoDatasource.getTodayTestBreveEstadoDeAnimo(year, month, day);
+  getTodayTestBreveEstadoDeAnimo(year: number, month: number, day: number, userId: string): Promise<TestBreveEstadoDeAnimo | null> {
+    return this.testBreveEstadoDeAnimoDatasource.getTodayTestBreveEstadoDeAnimo(year, month, day, userId);
   }
   
 }

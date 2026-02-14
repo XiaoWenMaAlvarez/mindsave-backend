@@ -10,7 +10,6 @@ export class EditarTestBreveEstadoDeAnimoDeHoyUseCase implements EditarTestBreve
   ){}
 
   execute(reg: TestBreveEstadoDeAnimo) {
-    //TODO: Verificar que el id de usuario sea válido
     return this.repository.editarTestBreveEstadoDeAnimoDeHoy(reg);
   }
 }

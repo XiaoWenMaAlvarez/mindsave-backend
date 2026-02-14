@@ -27,7 +27,7 @@ export class TestBreveEstadoDeAnimoController {
   }
 
   public saveTestBreveEstadoDeAnimo = (req: Request, res: Response) => {
-    const [error, testBreve] = TestBreveEstadoDeAnimoDTO.create(req.body);
+    const [error, testBreve] = TestBreveEstadoDeAnimoDTO.create({...req.body, idUsuario: req.body.payload.id});
     if(error) return res.status(400).json({error});
     const createTestUseCase = new CreateTestBreveEstadoDeAnimoUseCase(this.testBreveEstadoDeAnimoRepository);
     createTestUseCase.execute(testBreve!)
@@ -40,13 +40,13 @@ export class TestBreveEstadoDeAnimoController {
     if(isNaN(year)) return res.status(400).json({error: "Año inválido"});
 
     const getTestBreveEstadoDeAnimoByYearUseCase = new GetTestBreveEstadoDeAnimoByYearUseCase(this.testBreveEstadoDeAnimoRepository);
-    getTestBreveEstadoDeAnimoByYearUseCase.execute(year)
+    getTestBreveEstadoDeAnimoByYearUseCase.execute(year, req.body.payload.id)
       .then((results) => res.status(200).json(results))
       .catch(error => this.handleError(res, error));
   }
 
   public editarTestBreveEstadoDeAnimoDeHoy = (req: Request, res: Response) => {  
-    const [error, testBreve] = TestBreveEstadoDeAnimoDTO.edit(req.body);
+    const [error, testBreve] = TestBreveEstadoDeAnimoDTO.edit({...req.body, idUsuario: req.body.payload.id});
     if(error) return res.status(400).json({error});
     const editarTestBreveEstadoDeAnimoDeHoyUseCase = new EditarTestBreveEstadoDeAnimoDeHoyUseCase(this.testBreveEstadoDeAnimoRepository);
     editarTestBreveEstadoDeAnimoDeHoyUseCase.execute(testBreve!)
@@ -61,7 +61,7 @@ export class TestBreveEstadoDeAnimoController {
     if(!this.isFechaValida(year, month, day)) return res.status(400).json({error: "Fecha inválida"});
     
     const eliminarTestBreveEstadoDeAnimoDeHoyUseCase = new EliminarTestBreveEstadoDeAnimoDeHoyUseCase(this.testBreveEstadoDeAnimoRepository);
-    eliminarTestBreveEstadoDeAnimoDeHoyUseCase.execute(year, month, day)
+    eliminarTestBreveEstadoDeAnimoDeHoyUseCase.execute(year, month, day, req.body.payload.id)
       .then(() => res.status(200).json({status: "success"}))
       .catch(error => this.handleError(res, error));
   }
@@ -73,7 +73,7 @@ export class TestBreveEstadoDeAnimoController {
     if(!this.isFechaValida(year, month, day)) return res.status(400).json({error: "Fecha inválida"});
     
     const getTodayTestBreveEstadoDeAnimoUseCase = new GetTodayTestBreveEstadoDeAnimoUseCase(this.testBreveEstadoDeAnimoRepository);
-    getTodayTestBreveEstadoDeAnimoUseCase.execute(year, month, day)
+    getTodayTestBreveEstadoDeAnimoUseCase.execute(year, month, day, req.body.payload.id)
       .then((result) => res.status(200).json(result))
       .catch(error => this.handleError(res, error));
   }
