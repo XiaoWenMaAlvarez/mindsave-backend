@@ -1,14 +1,3 @@
-
-generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
-}
-
-datasource db {
-  provider = "postgresql"
-}
-
-
 model Depresion {
   id                    Int                     @id @default(autoincrement())
   tristeza              Int
@@ -17,6 +6,7 @@ model Depresion {
   faltaDeValor          Int
   perdidaDeSatisfaccion Int
   testBreve             TestBreveEstadoDeAnimo?
+
   @@map("depresion")
 }
 
@@ -25,8 +15,8 @@ model ImpulsoSuicida {
   pensamientosSuicidas Int
   deseosDeMorir        Int
   testBreve            TestBreveEstadoDeAnimo?
-  @@map("impulso_suicida")
 
+  @@map("impulso_suicida")
 }
 
 model SentimientosAnsiedadFisica {
@@ -60,57 +50,18 @@ model SentimientosAnsiedadEmocional {
 
 model TestBreveEstadoDeAnimo {
   id                  String                        @id @default(uuid())
-  
   depresionId         Int                           @unique
   depresion           Depresion                     @relation(fields: [depresionId], references: [id])
-
   impulsoSuicidaId    Int                           @unique
   impulsoSuicida      ImpulsoSuicida                @relation(fields: [impulsoSuicidaId], references: [id])
-
   ansiedadFisicaId    Int                           @unique
   ansiedadFisica      SentimientosAnsiedadFisica    @relation(fields: [ansiedadFisicaId], references: [id])
-
   ansiedadEmocionalId Int                           @unique
   ansiedadEmocional   SentimientosAnsiedadEmocional @relation(fields: [ansiedadEmocionalId], references: [id])
-  
-  idUsuario String
-  user  User   @relation(fields: [idUsuario], references: [id])
-  
+  idUsuario           String
+  user                User                          @relation(fields: [idUsuario], references: [id])
   fecha               DateTime                      @default(now())
   notas               String?
 
   @@map("test_breve_estado_de_animo")
-}
-
-enum TipoRol {
-  PROFESIONAL_ROL
-  USER_ROL
-}
-
-model Role {
-  id                  Int                     @id @default(autoincrement())
-  description         TipoRol                  @unique
-  @@map("role")
-  users User[]
-}
-
-
-model User {
-  id                  String               @id @default(uuid())
-  email               String               @unique
-  name                String                           
-  emailVerified       Boolean              @default(false)
-  password            String                
-  roleId              Int
-  
-  role                Role                 @relation(fields: [roleId], references: [id])
-  isActive            Boolean              @default(true)
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-
-  testsBreveEstadoDeAnimo   TestBreveEstadoDeAnimo[] 
-
-  resetToken          String?
-  resetTokenExpiration DateTime?
-  @@map("user")
 }
