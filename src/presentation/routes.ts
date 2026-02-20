@@ -1,7 +1,7 @@
 import { type Request, type Response, Router } from 'express';
 import { TestBreveEstadoDeAnimoRouter } from './test_breve_estado_de_animo/routes.js';
 import { AuthRouter } from './auth/routes.js';
-import fs from 'node:fs';
+import { RegistroEstadoDeAnimoRouter } from './registro_estado_de_animo/routes.js';
 
 export class AppRoutes {
 
@@ -10,6 +10,7 @@ export class AppRoutes {
 
     router.get("/health", (req: Request, res: Response) => res.json({message: "OK"}))
     router.use("/api/test-breve-estado-de-animo", TestBreveEstadoDeAnimoRouter.routes);
+    router.use("/api/registro-estado-de-animo", RegistroEstadoDeAnimoRouter.routes);
     router.use("/api/auth", AuthRouter.routes);
 
     return router;

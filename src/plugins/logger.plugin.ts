@@ -59,6 +59,7 @@ export class Logger {
   }
 
   static error(message: string){
+    console.log(`Error desde el logger: ${message}`)
     loggerErrorOptions.error(message);
     combinedLogger.error(message);
   }

@@ -15,7 +15,7 @@ export class TestBreveEstadoDeAnimoRouter {
 
     router.post("/", [AuthMiddleware.validateJWT], testBreveEstadoDeAnimoController.saveTestBreveEstadoDeAnimo);
     router.get("/by-year/:year", [AuthMiddleware.validateJWT], testBreveEstadoDeAnimoController.getTestBreveEstadoDeAnimoByYear);
-    router.put("", [AuthMiddleware.validateJWT], testBreveEstadoDeAnimoController.editarTestBreveEstadoDeAnimoDeHoy);
+    router.put("/", [AuthMiddleware.validateJWT], testBreveEstadoDeAnimoController.editarTestBreveEstadoDeAnimoDeHoy);
 
     router.delete("/:year/:month/:day", [AuthMiddleware.validateJWT], testBreveEstadoDeAnimoController.eliminarTestBreveEstadoDeAnimoDeHoy);
     router.get("/by-date/:year/:month/:day", [AuthMiddleware.validateJWT], testBreveEstadoDeAnimoController.getTodayTestBreveEstadoDeAnimo);

@@ -1,0 +1,1 @@
+export * from './registro_estado_de_animo/registroMapper.js';

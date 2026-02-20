@@ -1,0 +1,356 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TipoRol {
+  PROFESIONAL_ROL
+  USER_ROL
+}
+
+model Role {
+  id          Int     @id @default(autoincrement())
+  description TipoRol @unique
+  users       User[]
+
+  @@map("role")
+}
+
+model User {
+  id                   String    @id @default(uuid())
+  email                String    @unique
+  name                 String
+  emailVerified        Boolean   @default(false)
+  password             String
+  roleId               Int
+  role                 Role      @relation(fields: [roleId], references: [id])
+  isActive             Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  resetToken           String?
+  resetTokenExpiration DateTime?
+
+  testsBreveEstadoDeAnimo TestBreveEstadoDeAnimo[]
+  registrosEstadoAnimo    RegistroEstadoAnimo[]
+
+  @@map("user")
+}
+
+model Depresion {
+  id                    Int                     @id @default(autoincrement())
+  tristeza              Int
+  desesperanza          Int
+  bajaAutoestima        Int
+  faltaDeValor          Int
+  perdidaDeSatisfaccion Int
+  testBreve           TestBreveEstadoDeAnimo @relation(fields: [testBreveId], references: [id], onDelete: Cascade)
+  testBreveId         String                           @unique
+
+  @@map("depresion")
+}
+
+model ImpulsoSuicida {
+  id                   Int                     @id @default(autoincrement())
+  pensamientosSuicidas Int
+  deseosDeMorir        Int
+  testBreve            TestBreveEstadoDeAnimo @relation(fields: [testBreveId], references: [id], onDelete: Cascade)
+  testBreveId      String                           @unique
+
+
+  @@map("impulso_suicida")
+}
+
+model SentimientosAnsiedadFisica {
+  id                      Int                     @id @default(autoincrement())
+  palpitaciones           Int
+  sudoracion              Int
+  temblores               Int
+  dificultadRespirar      Int
+  ahogo                   Int
+  dolorPecho              Int
+  nauseas                 Int
+  mareos                  Int
+  sensacionIrrealidad     Int
+  inestabilidadHormigueos Int
+  testBreve               TestBreveEstadoDeAnimo @relation(fields: [testBreveId], references: [id], onDelete: Cascade)
+  testBreveId    String                           @unique
+
+  @@map("sentimientos_ansiedad_fisica")
+}
+
+model SentimientosAnsiedadEmocional {
+  id         Int                     @id @default(autoincrement())
+  angustiado Int
+  nervioso   Int
+  preocupado Int
+  asustado   Int
+  tenso      Int
+  testBreve  TestBreveEstadoDeAnimo @relation(fields: [testBreveId], references: [id], onDelete: Cascade)
+  testBreveId String                           @unique
+
+  @@map("sentimientos_ansiedad_emocional")
+}
+
+model TestBreveEstadoDeAnimo {
+  id                  String                        @id @default(uuid())
+  depresion           Depresion?
+  impulsoSuicida      ImpulsoSuicida?
+  ansiedadFisica      SentimientosAnsiedadFisica?
+  ansiedadEmocional   SentimientosAnsiedadEmocional?
+  idUsuario           String
+  user                User                          @relation(fields: [idUsuario], references: [id], onDelete: Cascade)
+  fecha               DateTime                      @default(now())
+  notas               String?
+
+  @@map("test_breve_estado_de_animo")
+}
+
+model GrupoEmociones1 {
+  id          Int     @id @default(autoincrement())
+  triste      Boolean @default(false)
+  melancolico Boolean @default(false)
+  deprimido   Boolean @default(false)
+  decaido     Boolean @default(false)
+  infeliz     Boolean @default(false)
+
+  porcentajeCreenciaAntes   Int
+  porcentajeCreenciaDespues Int?
+
+  registroEstadoAnimo   RegistroEstadoAnimo @relation(fields: [registroEstadoAnimoId], references: [id], onDelete: Cascade)
+  registroEstadoAnimoId String              @unique
+
+  @@map("grupoEmociones1")
+}
+
+model GrupoEmociones2 {
+  id         Int     @id @default(autoincrement())
+  angustiado Boolean @default(false)
+  preocupado Boolean @default(false)
+  conPanico  Boolean @default(false)
+  nervioso   Boolean @default(false)
+  asustado   Boolean @default(false)
+
+  porcentajeCreenciaAntes   Int
+  porcentajeCreenciaDespues Int?
+
+  registroEstadoAnimo   RegistroEstadoAnimo @relation(fields: [registroEstadoAnimoId], references: [id], onDelete: Cascade)
+  registroEstadoAnimoId String              @unique
+
+  @@map("grupoEmociones2")
+}
+
+model GrupoEmociones3 {
+  id               Int     @id @default(autoincrement())
+  culpable         Boolean @default(false)
+  conRemordimiento Boolean @default(false)
+  malo             Boolean @default(false)
+  avergonzado      Boolean @default(false)
+
+  porcentajeCreenciaAntes   Int
+  porcentajeCreenciaDespues Int?
+
+  registroEstadoAnimo   RegistroEstadoAnimo @relation(fields: [registroEstadoAnimoId], references: [id], onDelete: Cascade)
+  registroEstadoAnimoId String              @unique
+
+  @@map("grupoEmociones3")
+}
+
+model GrupoEmociones4 {
+  id           Int     @id @default(autoincrement())
+  inferior     Boolean @default(false)
+  sinValor     Boolean @default(false)
+  inadecuado   Boolean @default(false)
+  deficiente   Boolean @default(false)
+  incompetente Boolean @default(false)
+
+  porcentajeCreenciaAntes   Int
+  porcentajeCreenciaDespues Int?
+
+  registroEstadoAnimo   RegistroEstadoAnimo @relation(fields: [registroEstadoAnimoId], references: [id], onDelete: Cascade)
+  registroEstadoAnimoId String              @unique
+
+  @@map("grupoEmociones4")
+}
+
+model GrupoEmociones5 {
+  id         Int     @id @default(autoincrement())
+  solitario  Boolean @default(false)
+  noQuerido  Boolean @default(false)
+  noDeseado  Boolean @default(false)
+  rechazado  Boolean @default(false)
+  solo       Boolean @default(false)
+  abandonado Boolean @default(false)
+
+  porcentajeCreenciaAntes   Int
+  porcentajeCreenciaDespues Int?
+
+  registroEstadoAnimo   RegistroEstadoAnimo @relation(fields: [registroEstadoAnimoId], references: [id], onDelete: Cascade)
+  registroEstadoAnimoId String              @unique
+
+  @@map("grupoEmociones5")
+}
+
+model GrupoEmociones6 {
+  id        Int     @id @default(autoincrement())
+  turbado   Boolean @default(false)
+  tonto     Boolean @default(false)
+  humillado Boolean @default(false)
+  apurado   Boolean @default(false)
+
+  porcentajeCreenciaAntes   Int
+  porcentajeCreenciaDespues Int?
+
+  registroEstadoAnimo   RegistroEstadoAnimo @relation(fields: [registroEstadoAnimoId], references: [id], onDelete: Cascade)
+  registroEstadoAnimoId String              @unique
+
+  @@map("grupoEmociones6")
+}
+
+model GrupoEmociones7 {
+  id             Int     @id @default(autoincrement())
+  desesperanzado Boolean @default(false)
+  desanimado     Boolean @default(false)
+  pesimista      Boolean @default(false)
+  descorazonado  Boolean @default(false)
+
+  porcentajeCreenciaAntes   Int
+  porcentajeCreenciaDespues Int?
+
+  registroEstadoAnimo   RegistroEstadoAnimo @relation(fields: [registroEstadoAnimoId], references: [id], onDelete: Cascade)
+  registroEstadoAnimoId String              @unique
+
+  @@map("grupoEmociones7")
+}
+
+model GrupoEmociones8 {
+  id         Int     @id @default(autoincrement())
+  frustrado  Boolean @default(false)
+  atascado   Boolean @default(false)
+  chasqueado Boolean @default(false)
+  derrotado  Boolean @default(false)
+
+  porcentajeCreenciaAntes   Int
+  porcentajeCreenciaDespues Int?
+
+  registroEstadoAnimo   RegistroEstadoAnimo @relation(fields: [registroEstadoAnimoId], references: [id], onDelete: Cascade)
+  registroEstadoAnimoId String              @unique
+
+  @@map("grupoEmociones8")
+}
+
+model GrupoEmociones9 {
+  id          Int     @id @default(autoincrement())
+  airado      Boolean @default(false)
+  enfadado    Boolean @default(false)
+  resentido   Boolean @default(false)
+  molesto     Boolean @default(false)
+  irritado    Boolean @default(false)
+  trastornado Boolean @default(false)
+  furioso     Boolean @default(false)
+
+  porcentajeCreenciaAntes   Int
+  porcentajeCreenciaDespues Int?
+
+  registroEstadoAnimo   RegistroEstadoAnimo @relation(fields: [registroEstadoAnimoId], references: [id], onDelete: Cascade)
+  registroEstadoAnimoId String              @unique
+
+  @@map("grupoEmociones9")
+}
+
+model GrupoEmocionesPersonalizadas {
+  id                        Int                    @id @default(autoincrement())
+  listaEmociones            EmocionPersonalizada[]
+  porcentajeCreenciaAntes   Int
+  porcentajeCreenciaDespues Int?
+
+  registroEstadoAnimo   RegistroEstadoAnimo @relation(fields: [registroEstadoAnimoId], references: [id], onDelete: Cascade)
+  registroEstadoAnimoId String              @unique
+
+  @@map("grupoEmocionesPersonalizadas")
+}
+
+model EmocionPersonalizada {
+  id                             Int                          @id @default(autoincrement())
+  descripcion                    String
+  grupoEmocionesPersonalizadasId Int
+  grupoEmocionesPersonalizadas   GrupoEmocionesPersonalizadas @relation(fields: [grupoEmocionesPersonalizadasId], references: [id], onDelete: Cascade)
+
+  @@map("emocionPersonalizada")
+}
+
+model Distorsion {
+  id                         Int         @id @default(autoincrement())
+  pensamientoTodoONada       Boolean     @default(false)
+  generalizacionExcesiva     Boolean     @default(false)
+  filtroMental               Boolean     @default(false)
+  descargarLoPositivo        Boolean     @default(false)
+  saltarAConclusiones        Boolean     @default(false)
+  magnificacionOMinimizacion Boolean     @default(false)
+  razonamientoEmocional      Boolean     @default(false)
+  afirmacionesDelTipoDeberia Boolean     @default(false)
+  ponerEtiquetas             Boolean     @default(false)
+  inculpacion                Boolean     @default(false)
+  pensamiento                Pensamiento @relation(fields: [pensamientoId], references: [id], onDelete: Cascade)
+  pensamientoId              Int         @unique
+
+  @@map("distorsion")
+}
+
+model Pensamiento {
+  id Int @id @default(autoincrement())
+
+  pensamientoNegativo       String
+  porcentajeCreenciaAntes   Int
+  porcentajeCreenciaDespues Int?
+
+  pensamientoPositivo        String?
+  porcentajeCreenciaPositivo Int?
+
+  distorsion Distorsion?
+
+  registroEstadoAnimoId String
+  registroEstadoAnimo   RegistroEstadoAnimo @relation(fields: [registroEstadoAnimoId], references: [id], onDelete: Cascade)
+
+  @@map("pensamiento")
+}
+
+model RegistroEstadoAnimo {
+  id                 String   @id @default(uuid())
+  idUsuario          String
+  user               User     @relation(fields: [idUsuario], references: [id])
+  fecha              DateTime @default(now())
+  sucesoTrastornador String
+
+  grupoEmociones1 GrupoEmociones1?
+
+  grupoEmociones2 GrupoEmociones2?
+
+  grupoEmociones3 GrupoEmociones3?
+
+  grupoEmociones4 GrupoEmociones4?
+
+  grupoEmociones5 GrupoEmociones5?
+
+  grupoEmociones6 GrupoEmociones6?
+
+  grupoEmociones7 GrupoEmociones7?
+
+  grupoEmociones8 GrupoEmociones8?
+
+  grupoEmociones9              GrupoEmociones9?
+  grupoEmocionesPersonalizadas GrupoEmocionesPersonalizadas?
+
+  pensamientos Pensamiento[]
+
+  @@map("registro_estado_animo")
+}

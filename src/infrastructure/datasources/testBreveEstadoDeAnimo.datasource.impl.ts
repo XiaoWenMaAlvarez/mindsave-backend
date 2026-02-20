@@ -93,29 +93,15 @@ export class TestBreveEstadoDeAnimoDatasourceImpl implements TestBreveEstadoDeAn
 
     if(testParaEliminar == null) return;
 
-    await prisma.$transaction([
-      prisma.testBreveEstadoDeAnimo.deleteMany({
-        where: {
-          fecha: {
-            gte: startDate,
-            lt: endDate,
-          },
-          idUsuario: userId
-        }
-      }),
-      prisma.impulsoSuicida.delete({
-        where: { id: testParaEliminar.impulsoSuicidaId }
-      }),
-      prisma.depresion.delete({
-        where: { id: testParaEliminar.depresionId }
-      }),
-      prisma.sentimientosAnsiedadEmocional.delete({
-        where: { id: testParaEliminar.ansiedadEmocionalId }
-      }),
-      prisma.sentimientosAnsiedadFisica.delete({
-        where: { id: testParaEliminar.ansiedadFisicaId }
-      })
-    ]);
+    await prisma.testBreveEstadoDeAnimo.deleteMany({
+      where: {
+        fecha: {
+          gte: startDate,
+          lt: endDate,
+        },
+        idUsuario: userId
+      }
+    });
   }
   
   async getTodayTestBreveEstadoDeAnimo(year: number, month: number, day: number, userId: string): Promise<TestBreveEstadoDeAnimo | null> {

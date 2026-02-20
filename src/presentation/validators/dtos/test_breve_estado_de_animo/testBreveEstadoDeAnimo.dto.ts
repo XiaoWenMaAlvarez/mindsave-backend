@@ -8,20 +8,13 @@ export class TestBreveEstadoDeAnimoDTO {
   static create(body: {[key: string]: any}): [string | null, TestBreveEstadoDeAnimo | null] {
     const result = isValidEsquemaTestBreveEstadoDeAnimo(body);
     if(typeof result === "string") return [result, null];
-    return [null, TestBreveEstadoDeAnimo.fromJson({
-      ...body,
-      fecha: new Date(body.fecha)
-    })];
+    return [null, TestBreveEstadoDeAnimo.fromJson(body)];
   }
 
   static edit(body: {[key: string]: any}): [string | null, TestBreveEstadoDeAnimo | null] {
     const result = isValidEsquemaTestBreveEstadoDeAnimo(body);
     if(typeof result === "string") return [result, null];
-    return [null, TestBreveEstadoDeAnimo.fromJson({
-      ...body,
-      fecha: new Date(body.fecha)
-      }
-    )];
+    return [null, TestBreveEstadoDeAnimo.fromJson(body)];
   }
 }
 

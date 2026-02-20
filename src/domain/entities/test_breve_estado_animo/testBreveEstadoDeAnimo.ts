@@ -46,7 +46,7 @@ export class TestBreveEstadoDeAnimo {
       ansiedadFisica: SentimientosAnsiedadFisicaTestBreve.fromJson(ansiedadFisica),
       ansiedadEmocional: SentimientosAnsiedadEmocionalTestBreve.fromJson(ansiedadEmocional),
       idUsuario,
-      fecha
+      fecha: typeof fecha === 'string' ? new Date(fecha) : fecha,
     };
     if(id) options.id = id;
     if(notas) options.notas = notas;
