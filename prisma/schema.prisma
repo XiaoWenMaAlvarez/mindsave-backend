@@ -42,6 +42,7 @@ model User {
 
   testsBreveEstadoDeAnimo TestBreveEstadoDeAnimo[]
   registrosEstadoAnimo    RegistroEstadoAnimo[]
+  chats                   Chat[]
 
   @@map("user")
 }
@@ -327,7 +328,7 @@ model Pensamiento {
 model RegistroEstadoAnimo {
   id                 String   @id @default(uuid())
   idUsuario          String
-  user               User     @relation(fields: [idUsuario], references: [id])
+  user               User     @relation(fields: [idUsuario], references: [id],  onDelete: Cascade)
   fecha              DateTime @default(now())
   sucesoTrastornador String
 
@@ -353,4 +354,59 @@ model RegistroEstadoAnimo {
   pensamientos Pensamiento[]
 
   @@map("registro_estado_animo")
+}
+
+
+model Chat {
+  id          String     @id @default(uuid())
+
+  title      String
+
+  idUsuario   String
+  user        User     @relation(fields: [idUsuario], references: [id], onDelete: Cascade)
+  
+  mensajes   Mensaje[] 
+	@@map("chat")
+}
+
+enum TipoChatRol {
+  model
+  user
+  system
+}
+
+model ChatRole {
+  id          Int     @id @default(autoincrement())
+  description TipoChatRol @unique
+  mensajes   Mensaje[] 
+
+  @@map("chat_role")
+}
+
+model Mensaje {
+  id       String     @id @default(uuid())
+  text   String
+  createdAt DateTime @default(now())
+
+
+  roleId Int
+  role   ChatRole     @relation(fields: [roleId], references: [id])
+
+  chatId String
+  chat  Chat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  
+  archivos   Archivo[] 
+	@@map("mensaje")
+}
+
+model Archivo {
+  id       String     @id @default(uuid())
+
+  fileUri   String
+  mimeType   String
+  fileUrl   String
+
+  mensajeId String
+  mensaje  Mensaje   @relation(fields: [mensajeId], references: [id], onDelete: Cascade)
+	@@map("archivo")
 }
