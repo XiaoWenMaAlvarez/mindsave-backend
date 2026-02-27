@@ -71,9 +71,6 @@ export class SendMessageToChatUseCase {
       }
       results.push(newMessage);
     });
-    results.forEach(message => {
-      console.log(`El mensaje de: ${message.role} es: ${message.parts![0]!.text}`);
-    });
     return results.reverse();
   }
 
