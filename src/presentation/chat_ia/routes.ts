@@ -15,7 +15,6 @@ export class ChatIARouter {
     const filesRepositoryService = new FilesRepositoryService();
     const geminiService = new GeminiService({
       model: "gemini-3-flash-preview",
-      systemInstruction: `Responde únicamente en español y en formato Markdown`
     });
     
     const chatIAController = new ChatIAController(chatIARepository, filesRepositoryService, geminiService);

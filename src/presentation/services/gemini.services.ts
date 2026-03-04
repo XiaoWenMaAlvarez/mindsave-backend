@@ -1,6 +1,7 @@
 import { createPartFromUri, GoogleGenAI, type Content } from "@google/genai";
 import type { ArchivoChatIA } from "../../domain/init.js";
 import { Logger } from "../../plugins/logger.plugin.js";
+import { systemInstruction } from "./system_instruction.js";
 
 
 const fileMimeTypesByExtension: Record<string, string> = {
@@ -19,22 +20,17 @@ const fileMimeTypesByExtension: Record<string, string> = {
   webp: 'image/webp',
 };
 
-const defaultSystemInstruction = `Responde únicamente en español y en formato Markdown`;
-
 export interface GeminiServiceOptions {
   model?: string;
-  systemInstruction?: string;
 }
 
 export class GeminiService {
 
   private ai = new GoogleGenAI({});
   private model: string;
-  private systemInstruction: string;
 
   constructor(options: GeminiServiceOptions = {}){
     this.model = options.model ?? "gemini-3-flash-preview";
-    this.systemInstruction = options.systemInstruction ?? defaultSystemInstruction;
   }
 
   // TAMBIÉN ACEPTA PDFs, csv, texto plano, markdown, html, json
@@ -66,7 +62,7 @@ export class GeminiService {
       const chat = this.ai.chats.create({
         model: this.model,
         config: {
-          systemInstruction: this.systemInstruction,
+          systemInstruction: systemInstruction,
         },
         history: history,
       });

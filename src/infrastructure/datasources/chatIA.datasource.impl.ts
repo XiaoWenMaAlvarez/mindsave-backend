@@ -1,12 +1,10 @@
 import { ChatIADatasource } from '../../domain/datasources/init.js';
-import { ArchivoChatIA, ChatChatIA, CustomError, MensajeChatIA } from '../../domain/init.js';
+import { ChatChatIA, CustomError, MensajeChatIA } from '../../domain/init.js';
 import { prisma } from "../../data/index.js";
 import { TipoChatRol } from '../../generated/prisma/enums.js';
 import { ChatIaMapper } from '../mappers/init.js';
 import type { RoleIaDB, UserDB } from '../models/init.js';
 
-
-//TODO: IMPLEMENTAR
 export class ChatIADatasourceImpl implements ChatIADatasource {
 
   async createNewChat(idUsuario: string, title: string): Promise<string> {

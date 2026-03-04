@@ -10,7 +10,6 @@ import type {
   ArchivoIaDB, 
   ChatIaDB, 
   MensajeIaDB, 
-  RoleIaDB 
 } from "../../models/init.js";
 
 export class ChatIaMapper {
@@ -26,6 +25,7 @@ export class ChatIaMapper {
 
   static MensajeFromDBtoEntity(registro: MensajeIaDB): MensajeChatIA {
     const options: mensajeChatIAOptions = {
+      id: registro.id,
       text: registro.text,
       role: registro.role.description,
       createdAt: registro.createdAt,

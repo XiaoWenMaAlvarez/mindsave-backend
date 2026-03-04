@@ -2,6 +2,7 @@ import type { ArchivoChatIA } from "./archivoChatIA.entity.js";
 
 
 export interface mensajeChatIAOptions {
+  id?: string;
   text: string;
   createdAt: Date;
   role: string;
@@ -10,6 +11,7 @@ export interface mensajeChatIAOptions {
 
 export class MensajeChatIA {
 
+  public id: string;
   public text: string;
   public createdAt: Date;
   public role: string;
@@ -17,7 +19,8 @@ export class MensajeChatIA {
 
   
   constructor(options: mensajeChatIAOptions) {
-    const {text, role, createdAt = new Date(), archivos = []} = options;
+    const {id = "", text, role, createdAt = new Date(), archivos = []} = options;
+    this.id = id
     this.text = text;
     this.createdAt = createdAt;
     this.archivos = archivos;
@@ -26,8 +29,9 @@ export class MensajeChatIA {
   
 
   static fromJson(object: {[key: string]: any}): MensajeChatIA {
-    const {text, role, createdAt = new Date(), archivos = []} = object;
+    const {id = "", text, role, createdAt = new Date(), archivos = []} = object;
     const options: mensajeChatIAOptions = {
+      id: id,
       text: text,
       role: role,
       createdAt: createdAt,
@@ -39,6 +43,7 @@ export class MensajeChatIA {
 
   toJson() {
     return {
+      id: this.id,
       text: this.text,
       role: this.role,
       createdAt: this.createdAt,
