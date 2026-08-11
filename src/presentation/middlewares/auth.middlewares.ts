@@ -1,6 +1,6 @@
 import { type NextFunction, type Request, type Response } from "express";
 import { JwtAdapter } from "../../config/jwt.adapter.js";
-import { Logger } from "../../plugins/logger.plugin.js";
+import { Logger } from "../../config/logger.plugin.js";
 
 
 export class AuthMiddleware {

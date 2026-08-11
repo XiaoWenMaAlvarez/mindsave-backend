@@ -36,6 +36,7 @@ if (process.env.NODE_ENV !== 'production') {
   }));
 }
 
+// Archivo con todos los logs combinados
 const combinedLogger = winston.createLogger({
   format: combine(
     timezoned(),

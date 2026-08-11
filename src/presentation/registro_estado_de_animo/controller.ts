@@ -1,5 +1,5 @@
 import { type Request, type Response } from 'express';
-import { Logger } from '../../plugins/logger.plugin.js';
+import { Logger } from '../../config/logger.plugin.js';
 import { RegistroEstadoDeAnimoDTO } from '../validators/dtos/init.js';
 import { CreateRegistroEstadoDeAnimoUseCase, CustomError, RegistroEstadoAnimoRepository,
    GetRegistroEstadoDeAnimoPendientesUseCase, GetRegistroEstadoDeAnimoCompletosUseCase,

@@ -1,4 +1,4 @@
-import { jest } from "@jest/globals";
+import { describe, test, expect } from "@jest/globals";
 
 describe("App", () => {
   test("dos más dos es cuatro", () => {

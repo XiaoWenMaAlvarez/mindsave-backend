@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { envs } from "./envs.js";
 import {type StringValue} from 'ms';
-import { Logger } from "../plugins/logger.plugin.js";
+import { Logger } from "./logger.plugin.js";
 
 const JWT_SEED = envs.JWT_SEED;
 
