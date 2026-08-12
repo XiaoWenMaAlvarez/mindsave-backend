@@ -15,15 +15,17 @@
   > npx prisma migrate dev --name init
   > npx prisma generate
 
-- Insertar los registros por defecto (inicializcion.pgsql)
+- Insertar los registros por defecto (inicializacion.pgsql)
 
 - Ejecutar el servidor 
   > npm run dev
 
+- Probar los endpoints con Postman
+
+# Frontend con Flutter
 - Levantar url pública 
   > ngrok http 3000
 
-# Frontend
 - Pegar la url pública en el .env de Flutter
 
 - Compilar Flutter
