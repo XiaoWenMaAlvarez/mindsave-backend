@@ -1,7 +1,7 @@
 import { JwtAdapter } from '../../../config/jwt.adapter.js';
 import { EmailService } from '../../../config/nodemailer.adapter.js';
 import {  UserRepository } from '../../init.js';
-import { Logger } from '../../../plugins/init.js';
+import { Logger } from '../../../config/logger.plugin.js';
 import { bcryptAdapter } from '../../../config/bcrypt.adapter.js';
 
 export interface ResetPasswordUseCaseInterface {

@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { CustomError, UserEntity, type UserRepository, ResetPasswordUseCase } from "../../domain/init.js";
-import { Logger } from "../../plugins/init.js";
+import { Logger } from "../../config/logger.plugin.js";
 import { UserDTO } from "../validators/dtos/auth/user.dto.js";
 import { JwtAdapter } from "../../config/jwt.adapter.js";
 import { EmailService } from "../../config/nodemailer.adapter.js";
