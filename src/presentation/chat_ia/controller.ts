@@ -3,6 +3,8 @@ import { Logger } from '../../config/logger.plugin.js';
 import { ChatIARepository, CreateChatIAUseCase, CustomError, DeleteChatUseCase, GetChatsByUserUseCase, GetMessagesFromChatUseCase, SendMessageToChatUseCase } from '../../domain/init.js';
 import { UuidDto, PromptChatDTO } from '../validators/dtos/init.js';
 import type { FilesRepositoryService, GeminiService } from '../../config/init.js';
+import { unlink } from 'node:fs/promises';
+import * as path from 'node:path';
 
 export class ChatIAController {
 
@@ -96,11 +98,26 @@ export class ChatIAController {
       await sendMessageToChatUseCase.saveMessage(promptChatDTO!.chatId, promptChatDTO!.idUsuario, userMessage);
       await sendMessageToChatUseCase.saveMessage(promptChatDTO!.chatId, promptChatDTO!.idUsuario, geminiMessage);
 
+      await Promise.all(
+        options.files.map(file => {
+          return this.deleteLocalFile(file.path)
+        })
+      )
+
     } catch(error) {
       Logger.error(`${error}`);
       this.handleError(res, error);
     }
     return;
   }
+
+  async deleteLocalFile(filePath: string): Promise<void> {
+    try {
+      await unlink(filePath);
+    } catch (error) {
+      Logger.error(`Error al eliminar el archivo temporal ${filePath}: ${error}`);
+    }
+  }
+  
 
 }
