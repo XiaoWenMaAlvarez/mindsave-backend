@@ -2,7 +2,7 @@ import { type Request, type Response } from 'express';
 import { Logger } from '../../config/logger.plugin.js';
 import { ChatIARepository, CreateChatIAUseCase, CustomError, DeleteChatUseCase, GetChatsByUserUseCase, GetMessagesFromChatUseCase, SendMessageToChatUseCase } from '../../domain/init.js';
 import { UuidDto, PromptChatDTO } from '../validators/dtos/init.js';
-import type { FilesRepositoryService, GeminiService } from '../services/init.js';
+import type { FilesRepositoryService, GeminiService } from '../../config/init.js';
 
 export class ChatIAController {
 

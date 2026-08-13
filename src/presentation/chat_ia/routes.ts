@@ -3,7 +3,7 @@ import { ChatIAController } from './controller.js';
 import { ChatIADatasourceImpl, ChatIARepositoryImpl } from '../../infrastructure/init.js';
 import { AuthMiddleware } from '../middlewares/auth.middlewares.js';
 import multer from 'multer';
-import { FilesRepositoryService, GeminiService } from '../services/init.js';
+import { FilesRepositoryService, GeminiService } from '../../config/init.js';
 
 export class ChatIARouter {
 

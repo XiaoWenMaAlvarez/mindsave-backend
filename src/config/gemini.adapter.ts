@@ -1,6 +1,6 @@
 import { createPartFromUri, GoogleGenAI, type Content } from "@google/genai";
-import type { ArchivoChatIA } from "../../domain/init.js";
-import { Logger } from "../../config/logger.plugin.js";
+import type { ArchivoChatIA } from "../domain/init.js";
+import { Logger } from "./logger.plugin.js";
 import { systemInstruction } from "./system_instruction.js";
 
 

@@ -134,5 +134,7 @@ export class UserDatasourceImpl implements UserDatasource {
       return null;
     }
   }
+
+  // TODO Función que verifique mediante su ID si el usuario tiene un rol de admin
   
 }

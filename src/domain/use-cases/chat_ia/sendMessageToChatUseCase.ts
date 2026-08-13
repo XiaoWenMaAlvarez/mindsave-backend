@@ -1,4 +1,4 @@
-import type { FilesRepositoryService, GeminiService } from "../../../presentation/services/init.js";
+import type { FilesRepositoryService, GeminiService } from "../../../config/init.js";
 import type { PromptChatDTO } from "../../../presentation/validators/ini.js";
 import { ArchivoChatIA, ChatChatIA, ChatIARepository, MensajeChatIA } from "../../init.js";
 import type { Content, GenerateContentResponse } from "@google/genai";
