@@ -91,12 +91,13 @@ export class AuthController {
         };
         if(result instanceof UserEntity) {
           const {password, ...user} = result.toJson();
-          const token = JwtAdapter.generateToken({id: user.id, email: user.email, name: user.name});
+          const token = JwtAdapter.generateToken({id: user.id, email: user.email, name: user.name, role: user.role});
           if(!token) throw CustomError.internalServerError("Error generating token");
           return res.status(200).json({
             id: user.id,
             email: user.email,
             name: user.name,
+            role: user.role,
             token
           });
         }
@@ -106,13 +107,14 @@ export class AuthController {
 
   checkStatus = (req: Request, res: Response) => {
     try {
-      const { id, email, name } = req.body.payload;
-      const token = JwtAdapter.generateToken({ id, email, name });
+      const { id, email, name, role } = req.body.payload;
+      const token = JwtAdapter.generateToken({ id, email, name, role });
       if(!token) throw CustomError.internalServerError("Error generating token");
       return res.status(200).json({
         id,
         email,
         name,
+        role,
         token
       });
     } catch (error) {

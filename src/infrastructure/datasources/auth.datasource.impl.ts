@@ -94,6 +94,9 @@ export class UserDatasourceImpl implements UserDatasource {
     const user = await prisma.user.findUnique({
       where: {
         email: email
+        },
+        include: {
+          role: true
         }
     });
     if(user == null) return "Email not found";
@@ -103,9 +106,18 @@ export class UserDatasourceImpl implements UserDatasource {
 
     if(!user.emailVerified) return "EMAIL_NOT_VERIFIED";
 
+    if(user.role.description !== "USER_ROL") return "INCORRET_ROLE";
+
     user.password = "";
 
-    return UserEntity.fromJson(user);
+    return UserEntity.fromJson({
+      id: user.id, 
+      email: user.email, 
+      name: user.name, 
+      password: user.password, 
+      emailVerified: user.emailVerified, 
+      role: user.role.description
+    });
 
   }
   
@@ -134,7 +146,5 @@ export class UserDatasourceImpl implements UserDatasource {
       return null;
     }
   }
-
-  // TODO Función que verifique mediante su ID si el usuario tiene un rol de admin
   
 }

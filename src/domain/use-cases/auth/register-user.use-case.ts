@@ -32,6 +32,7 @@ export class RegisterUser implements RegisterUserUseCase {
   }
 
   private async sendEmailValidationLink(email: string, link: string) {
+    //TODO: Mejorar
     const htmlBody = `
       <h1>Valida tu correo electrónico</h1>
       <p>Haz clic en el siguiente enlace para validar tu cuenta en MindSave:</p>

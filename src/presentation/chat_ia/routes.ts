@@ -21,15 +21,15 @@ export class ChatIARouter {
 
     const upload = multer({ dest: 'uploads/' });
 
-    router.post("/new-chat", [AuthMiddleware.validateJWT], chatIAController.createNewChat);
+    router.post("/new-chat", [AuthMiddleware.validateJWTUser], chatIAController.createNewChat);
 
-    router.get("/get-chats-by-user", [AuthMiddleware.validateJWT], chatIAController.getChatsByUser);
+    router.get("/get-chats-by-user", [AuthMiddleware.validateJWTUser], chatIAController.getChatsByUser);
     
-    router.get("/get-messages-from-chat/:idChat", [AuthMiddleware.validateJWT], chatIAController.getMessagesFromChat);
+    router.get("/get-messages-from-chat/:idChat", [AuthMiddleware.validateJWTUser], chatIAController.getMessagesFromChat);
 
-    router.post("/send-message-to-chat/:idChat", [upload.array('files'), AuthMiddleware.validateJWT], chatIAController.sendMessageToChat);
+    router.post("/send-message-to-chat/:idChat", [upload.array('files'), AuthMiddleware.validateJWTUser], chatIAController.sendMessageToChat);
 
-    router.delete("/delete-chat/:idChat", [AuthMiddleware.validateJWT], chatIAController.deleteChat);
+    router.delete("/delete-chat/:idChat", [AuthMiddleware.validateJWTUser], chatIAController.deleteChat);
 
     return router;
   }

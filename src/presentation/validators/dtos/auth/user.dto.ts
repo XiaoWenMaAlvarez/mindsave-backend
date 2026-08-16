@@ -17,7 +17,8 @@ export class UserDTO {
       name: body.name,
       password: body.password,
       emailVerified: false,
-      id: ""
+      id: "",
+      role: ""
     })];
   }
 

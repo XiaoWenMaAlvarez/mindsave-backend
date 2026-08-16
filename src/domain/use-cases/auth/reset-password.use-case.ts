@@ -51,6 +51,7 @@ export class ResetPasswordUseCase implements ResetPasswordUseCaseInterface {
 
 
   private async sendEmailResetPasswordLink(email: string, link: string, tokenTimeAliveMinutes: number) {
+    // TODO: Mejorar
     const htmlBody = `
       <h1>Restablece tu contraseña para MindSave</h1>
       <p>Haz clic en el siguiente enlace (válido por ${tokenTimeAliveMinutes} minutos):</p>

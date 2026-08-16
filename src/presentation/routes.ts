@@ -3,6 +3,7 @@ import { TestBreveEstadoDeAnimoRouter } from './test_breve_estado_de_animo/route
 import { AuthRouter } from './auth/routes.js';
 import { RegistroEstadoDeAnimoRouter } from './registro_estado_de_animo/routes.js';
 import { ChatIARouter } from './chat_ia/routes.js';
+import { AdminAuthRouter } from './admin/auth/routes.js'
 
 export class AppRoutes {
 
@@ -14,6 +15,8 @@ export class AppRoutes {
     router.use("/api/registro-estado-de-animo", RegistroEstadoDeAnimoRouter.routes);
     router.use("/api/auth", AuthRouter.routes);
     router.use("/api/chat-ia", ChatIARouter.routes);
+
+    router.use("/admin/auth", AdminAuthRouter.routes);
 
     return router;
   }

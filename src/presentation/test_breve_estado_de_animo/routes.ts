@@ -13,12 +13,12 @@ export class TestBreveEstadoDeAnimoRouter {
     const testBreveEstadoDeAnimoRepository = new TestBreveEstadoDeAnimoRepositoryImpl(testBreveEstadoDeAnimoDatasource);
     const testBreveEstadoDeAnimoController = new TestBreveEstadoDeAnimoController(testBreveEstadoDeAnimoRepository);
 
-    router.post("/", [AuthMiddleware.validateJWT], testBreveEstadoDeAnimoController.saveTestBreveEstadoDeAnimo);
-    router.get("/by-year/:year", [AuthMiddleware.validateJWT], testBreveEstadoDeAnimoController.getTestBreveEstadoDeAnimoByYear);
-    router.put("/", [AuthMiddleware.validateJWT], testBreveEstadoDeAnimoController.editarTestBreveEstadoDeAnimoDeHoy);
+    router.post("/", [AuthMiddleware.validateJWTUser], testBreveEstadoDeAnimoController.saveTestBreveEstadoDeAnimo);
+    router.get("/by-year/:year", [AuthMiddleware.validateJWTUser], testBreveEstadoDeAnimoController.getTestBreveEstadoDeAnimoByYear);
+    router.put("/", [AuthMiddleware.validateJWTUser], testBreveEstadoDeAnimoController.editarTestBreveEstadoDeAnimoDeHoy);
 
-    router.delete("/:year/:month/:day", [AuthMiddleware.validateJWT], testBreveEstadoDeAnimoController.eliminarTestBreveEstadoDeAnimoDeHoy);
-    router.get("/by-date/:year/:month/:day", [AuthMiddleware.validateJWT], testBreveEstadoDeAnimoController.getTodayTestBreveEstadoDeAnimo);
+    router.delete("/:year/:month/:day", [AuthMiddleware.validateJWTUser], testBreveEstadoDeAnimoController.eliminarTestBreveEstadoDeAnimoDeHoy);
+    router.get("/by-date/:year/:month/:day", [AuthMiddleware.validateJWTUser], testBreveEstadoDeAnimoController.getTodayTestBreveEstadoDeAnimo);
 
 
     return router;

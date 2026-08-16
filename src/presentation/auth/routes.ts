@@ -33,7 +33,7 @@ export class AuthRouter {
     router.post("/reset-password/:token", authController.resetPasswordWithToken);
     
 
-    router.get("/check-status", [AuthMiddleware.validateJWT], authController.checkStatus);
+    router.get("/check-status", [AuthMiddleware.validateJWTUser], authController.checkStatus);
 
     return router;
   }
