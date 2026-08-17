@@ -40,7 +40,7 @@ const testBreveEstadoDeAnimoSchema = z.object({
   idUsuario: z.uuid("El id de usuario debe ser un uuid"),
   fecha: z.string("La fecha debe ser un string"),
   id: z.string().optional(),
-  notas: z.string().max(500).optional(),
+  notas: z.string().max(500).nullable(),
 }, "El test breve de estado de ánimo debe ser un objeto");
 
 export const isValidEsquemaTestBreveEstadoDeAnimo = (body: {[key: string]: any}): boolean | string => {

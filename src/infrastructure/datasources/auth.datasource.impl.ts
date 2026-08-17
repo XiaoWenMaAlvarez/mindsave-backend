@@ -75,7 +75,7 @@ export class UserDatasourceImpl implements UserDatasource {
       }
     });
 
-    if(findRole == null) return "Undefined role";
+    if(findRole == null) return "Invalid role";
 
     await prisma.user.create({
       data: {
@@ -100,6 +100,8 @@ export class UserDatasourceImpl implements UserDatasource {
         }
     });
     if(user == null) return "Email not found";
+
+    if(!user.isActive) return "User is deleted or ban";
 
     const isMatch = bcryptAdapter.compare(password, user.password);
     if(!isMatch) return "Invalid password";

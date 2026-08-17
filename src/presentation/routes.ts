@@ -4,6 +4,7 @@ import { AuthRouter } from './auth/routes.js';
 import { RegistroEstadoDeAnimoRouter } from './registro_estado_de_animo/routes.js';
 import { ChatIARouter } from './chat_ia/routes.js';
 import { AdminAuthRouter } from './admin/auth/routes.js'
+import { AdminUserRouter } from './admin/user/routes.js';
 
 export class AppRoutes {
 
@@ -17,6 +18,7 @@ export class AppRoutes {
     router.use("/api/chat-ia", ChatIARouter.routes);
 
     router.use("/admin/auth", AdminAuthRouter.routes);
+    router.use("/admin/user", AdminUserRouter.routes);
 
     return router;
   }
