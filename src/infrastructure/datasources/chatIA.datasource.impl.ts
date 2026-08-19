@@ -59,7 +59,7 @@ export class ChatIADatasourceImpl implements ChatIADatasource {
   }
 
 
-  async getMessagesFromChat(idChat: string, idUsuario: string): Promise<ChatChatIA> {
+  async getMessagesFromChat(idChat: string, idUsuario: string, limit?: number): Promise<ChatChatIA> {
     const user = await this.getUserById(idUsuario);
 
     const chat = await prisma.chat.findFirst({
@@ -72,6 +72,7 @@ export class ChatIADatasourceImpl implements ChatIADatasource {
           orderBy: {
             createdAt: 'desc'
           },
+          ...(limit && limit > 0 ? { take: limit } : {}),
           include: {
             archivos: true,
             role: true

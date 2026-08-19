@@ -1,12 +1,43 @@
-import { AdminUserDatasource } from '../../../domain/datasources/init.js';
+import { AdminAuthDatasource } from '../../../domain/datasources/init.js';
 import { UserEntity } from '../../../domain/init.js';
 import { prisma } from "../../../data/index.js";
-import { TipoRol } from '../../../generated/prisma/enums.js';
+import { bcryptAdapter } from '../../../config/bcrypt.adapter.js';
 
 
-export class AdminUserDatasourceImpl implements AdminUserDatasource {
+export class AdminAuthDatasourceImpl implements AdminAuthDatasource {
 
-  async createUser(user: UserEntity): Promise<string | null> {
+  async login(email: string, password: string): Promise<UserEntity | string> {
+    const user = await prisma.user.findUnique({
+      where: {
+        email: email
+        },
+      include: {
+        role: true
+      }
+    });
+    if(user == null) return "Email not found";
+
+    const isMatch = bcryptAdapter.compare(password, user.password);
+    if(!isMatch) return "Invalid password";
+
+    if(!user.emailVerified) return "EMAIL_NOT_VERIFIED";
+
+    user.password = "";
+
+    if(user.role.description !== "PROFESIONAL_ROL" ) return "USER_IS_NOT_ADMIN";
+
+    return UserEntity.fromJson({
+      id: user.id, 
+      email: user.email, 
+      name: user.name, 
+      password: user.password, 
+      emailVerified: user.emailVerified, 
+      role: user.role.description
+    });
+
+  }
+
+    async register(user: UserEntity): Promise<string | UserEntity> {
     const isEmailRepeat = await prisma.user.findUnique({
       where: {
         email: user.email
@@ -15,154 +46,33 @@ export class AdminUserDatasourceImpl implements AdminUserDatasource {
 
     if(isEmailRepeat != null) return "Email already exists";
 
-    const role = user.role === TipoRol.PROFESIONAL_ROL ? TipoRol.PROFESIONAL_ROL : TipoRol.USER_ROL
-
     const findRole = await prisma.role.findUnique({
       where: {
-        description: role
+        description: "PROFESIONAL_ROL"
       }
     });
 
-    if(findRole == null) return "Invalid role";
+    if(findRole == null) return "Undefined role";
 
-    await prisma.user.create({
+    const userCreated = await prisma.user.create({
       data: {
         email: user.email,
         name: user.name,
         password: user.password,
         roleId: findRole.id,
-        emailVerified: user.emailVerified
+        emailVerified: true
       }
     });
 
-    return null;
-  }
-
-  async getUsers(page?: number, limit?: number): Promise<UserEntity[]> {
-    limit = limit ?? 10;
-    page = page ?? 1;
-    const usuarios = await prisma.user.findMany({
-      take: limit,
-      skip: page * limit - limit,
-      include: {
-        role: true
-      },
-    });
-
-    if (!usuarios) return [];
-
-    return usuarios.map((user) => UserEntity.fromJson({
-      id: user.id, 
-      email: user.email, 
-      name: user.name, 
-      password: "", 
-      emailVerified: user.emailVerified, 
-      role: user.role.description,
-      isActive: user.isActive
-    }))
-  }
-
-  async getUserById(userId: string): Promise<UserEntity | string> {
-    const user = await prisma.user.findUnique({
-      where: {
-        id: userId
-        },
-      include: {
-        role: true
-      }
-    });
-
-    if(user == null) return "User not found";
-    
     return UserEntity.fromJson({
-      id: user.id, 
-      email: user.email, 
-      name: user.name, 
-      password: "", 
-      emailVerified: user.emailVerified, 
-      role: user.role.description,
-      isActive: user.isActive
-    })
+      id: userCreated.id,
+      email: userCreated.email,
+      name: userCreated.name,
+      password: userCreated.password,
+      emailVerified: userCreated.emailVerified,
+      role: "PROFESIONAL_ROL"
+    });
   }
-
-
-  async updateUser(user: UserEntity): Promise<void> {
-    const usuarioParaEditar = await prisma.user.findFirst({
-      where: {
-        id: user.id
-      },
-    });
-
-    if(usuarioParaEditar == null) return;
-
-    const roleDescription = user.role === TipoRol.PROFESIONAL_ROL ? TipoRol.PROFESIONAL_ROL : TipoRol.USER_ROL
-
-    const role = await prisma.role.findFirst({
-      where: {
-        description: roleDescription
-      }
-    })
-
-    if(role == null) return;
-
-    await prisma.user.update({
-      where: {
-        id: user.id
-      },
-      data: {
-        email: user.email,
-        name: user.name,
-        password: user.password,
-        emailVerified: user.emailVerified,
-        roleId: role.id
-      }
-    });
-
-    return;
-
-  }
-
-
-  async deleteUser(userId: string): Promise<void> {
-    const usuarioParaEliminar = await prisma.user.findFirst({
-      where: {
-        id: userId
-      },
-    });
-
-    if(usuarioParaEliminar == null) return;
-
-    await prisma.user.update({
-      where: {
-        id: userId
-      },
-      data: {
-        isActive: false
-      }
-    });
-
-    return;
-  }
-
-  async restoreUser(userId: string): Promise<void> {
-    const usuarioParaEliminar = await prisma.user.findFirst({
-      where: {
-        id: userId
-      },
-    });
-
-    if(usuarioParaEliminar == null) return;
-
-    await prisma.user.update({
-      where: {
-        id: userId
-      },
-      data: {
-        isActive: true
-      }
-    });
-
-    return;
-  }
-
+  
+  
 }

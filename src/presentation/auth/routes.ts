@@ -7,16 +7,11 @@ import { AuthMiddleware } from '../middlewares/auth.middlewares.js';
 
 export class AuthRouter {
 
-  static get routes(): Router {
+  static routes( emailService: EmailService): Router {
     const router = Router();
 
     const userDatasource  = new UserDatasourceImpl();
     const userRepository = new UserRepositoryImpl(userDatasource);
-    const emailService = new EmailService(
-      envs.MAILER_SERVICE,
-      envs.MAILER_EMAIL,
-      envs.MAILER_SECRET_KEY,
-    );
 
     const verifyEmailUrl = `${envs.WEBSERVICE_URL}/api/auth/validate-email`;
 

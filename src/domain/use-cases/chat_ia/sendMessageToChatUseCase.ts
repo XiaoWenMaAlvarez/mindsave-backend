@@ -5,10 +5,13 @@ import type { Content, GenerateContentResponse } from "@google/genai";
 
 
 export class SendMessageToChatUseCase {
+  public static readonly DEFAULT_MAX_HISTORY_MESSAGES = 20;
+
   constructor(
     private readonly chatIArepository: ChatIARepository,
     private readonly filesRepositoryService: FilesRepositoryService,
-    private readonly geminiService: GeminiService
+    private readonly geminiService: GeminiService,
+    private readonly maxHistoryMessages: number = SendMessageToChatUseCase.DEFAULT_MAX_HISTORY_MESSAGES
   ){}
 
   async createUserMessage(promptChatDTO: PromptChatDTO): Promise<MensajeChatIA> {
@@ -51,9 +54,14 @@ export class SendMessageToChatUseCase {
   }
 
   private async getChatHistory(idChat: string, idUsuario: string): Promise<Content[]> {
-    const messagesEntity: ChatChatIA = await this.chatIArepository.getMessagesFromChat(idChat, idUsuario);
+    const messagesEntity: ChatChatIA = await this.chatIArepository.getMessagesFromChat(
+      idChat,
+      idUsuario,
+      this.maxHistoryMessages
+    );
+    const recentMessages = messagesEntity.mensajes.slice(0, this.maxHistoryMessages);
     const results: Content[] = []
-    messagesEntity.mensajes.forEach((message) => {
+    recentMessages.forEach((message) => {
       const newMessage: Content = {
         role: message.role,
         parts: [

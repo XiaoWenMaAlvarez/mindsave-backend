@@ -1,10 +1,10 @@
-import { type Request, type Response } from 'express';
+import { type NextFunction, type Request, type Response } from 'express';
 import { Logger } from '../../config/logger.plugin.js';
 import { ChatIARepository, CreateChatIAUseCase, CustomError, DeleteChatUseCase, GetChatsByUserUseCase, GetMessagesFromChatUseCase, SendMessageToChatUseCase } from '../../domain/init.js';
 import { UuidDto, PromptChatDTO } from '../validators/dtos/init.js';
-import type { FilesRepositoryService, GeminiService } from '../../config/init.js';
+import { type FilesRepositoryService, type GeminiService } from '../../config/init.js';
+import { existsSync } from 'node:fs';
 import { unlink } from 'node:fs/promises';
-import * as path from 'node:path';
 
 export class ChatIAController {
 
@@ -14,67 +14,60 @@ export class ChatIAController {
     private readonly geminiService: GeminiService
   ) {}
 
-  private handleError = (res: Response, error: any) => {
-    if(error instanceof CustomError) {
-      res.status(error.statusCode).json({error: error.message});
-      return;
-    } 
-    Logger.error(`${error}`);
-    res.status(500).json({error: "Internal Server Error"});
-  }
-
-  public createNewChat = (req: Request, res: Response) => {
+  public createNewChat = (req: Request, res: Response, next: NextFunction) => {
     const {title} = req.body;
     if(!title || typeof title !== "string"|| title === "" ) {
-      this.handleError(res, new CustomError("Title is required", 400));
-      return; 
+      return next(CustomError.badRequest("Title is required"));
     }
     const createChatUseCase = new CreateChatIAUseCase(this.chatIARepository);
-    createChatUseCase.execute(req.body.payload.id, title)
+    createChatUseCase.execute(req.user!.id, title)
       .then((idChat) => res.status(201).json({result: idChat}))
-      .catch(error => this.handleError(res, error));
+      .catch(next);
   }
 
-  public getChatsByUser = (req: Request, res: Response) => {  
+  public getChatsByUser = (req: Request, res: Response, next: NextFunction) => {  
     const getChatsUseCase = new GetChatsByUserUseCase(this.chatIARepository);
-    getChatsUseCase.execute(req.body.payload.id)
+    getChatsUseCase.execute(req.user!.id)
       .then((results) => res.json({results: results.map(chat => chat.toJson())}))
-      .catch(error => this.handleError(res, error));
+      .catch(next);
   }
 
-  public getMessagesFromChat = (req: Request, res: Response) => {  
+  public getMessagesFromChat = (req: Request, res: Response, next: NextFunction) => {  
     const idChat = req.params.idChat;
     const error = UuidDto.verify(idChat);
-    if(error !== null) return this.handleError(res, new CustomError(error, 400));  
+    if(error !== null) return next(CustomError.badRequest(error));  
     
     const getMessagesUseCase = new GetMessagesFromChatUseCase(this.chatIARepository);
-    getMessagesUseCase.execute(idChat!.toString(), req.body.payload.id)
+    getMessagesUseCase.execute(idChat!.toString(), req.user!.id)
       .then((result) => res.json({result}))
-      .catch(error => this.handleError(res, error));
+      .catch(next);
   }
 
-  public deleteChat = (req: Request, res: Response) => { 
+  public deleteChat = (req: Request, res: Response, next: NextFunction) => { 
     const idChat = req.params.idChat;
     const error = UuidDto.verify(idChat);
-    if(error !== null) return this.handleError(res, new CustomError(error, 400)); 
+    if(error !== null) return next(CustomError.badRequest(error)); 
     
     const deleteChatUseCase = new DeleteChatUseCase(this.chatIARepository);
-    deleteChatUseCase.execute(idChat!.toString(), req.body.payload.id)
+    deleteChatUseCase.execute(idChat!.toString(), req.user!.id)
       .then(() => res.json({result: "success"}))
-      .catch(error => this.handleError(res, error));
+      .catch(next);
   }
 
-  public sendMessageToChat = async (req: Request, res: Response) => {
+  public sendMessageToChat = async (req: Request, res: Response, next: NextFunction) => {
+    const files = (req.files as Express.Multer.File[]) ?? [];
     try {
       const options = {
         prompt: req.body.prompt,
-        files: req.files as Express.Multer.File[] ?? [],
+        files,
         chatId: req.params.idChat,
-        idUsuario: req.body.payload.id
+        idUsuario: req.user?.id
       }
 
       const [error, promptChatDTO] = PromptChatDTO.create(options);
-      if(error) return res.status(400).json({error});
+      if(error) {
+        return res.status(400).json({error});
+      }
 
       const sendMessageToChatUseCase = new SendMessageToChatUseCase(this.chatIARepository, this.filesRepositoryService, this.geminiService);
 
@@ -98,26 +91,26 @@ export class ChatIAController {
       await sendMessageToChatUseCase.saveMessage(promptChatDTO!.chatId, promptChatDTO!.idUsuario, userMessage);
       await sendMessageToChatUseCase.saveMessage(promptChatDTO!.chatId, promptChatDTO!.idUsuario, geminiMessage);
 
-      await Promise.all(
-        options.files.map(file => {
-          return this.deleteLocalFile(file.path)
-        })
-      )
-
     } catch(error) {
-      Logger.error(`${error}`);
-      this.handleError(res, error);
+      next(error);
+    } finally {
+      await Promise.all(
+        files.map(file => this.deleteLocalFile(file.path))
+      );
     }
     return;
   }
 
   async deleteLocalFile(filePath: string): Promise<void> {
     try {
-      await unlink(filePath);
-    } catch (error) {
-      Logger.error(`Error al eliminar el archivo temporal ${filePath}: ${error}`);
+      if (filePath && existsSync(filePath)) {
+        await unlink(filePath);
+      }
+    } catch (error: any) {
+      if (error.code !== 'ENOENT') {
+        Logger.error(`Error al eliminar el archivo temporal ${filePath}: ${error}`);
+      }
     }
   }
-  
 
 }

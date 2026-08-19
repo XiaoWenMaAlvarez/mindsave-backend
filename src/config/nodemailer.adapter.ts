@@ -1,4 +1,5 @@
 import nodemailer, {type Transporter} from "nodemailer";
+import { Logger } from "./logger.plugin.js";
 
 export interface SendMailOptions {
   to: string | string[];
@@ -29,6 +30,16 @@ export class EmailService {
       }
     });
       
+  }
+
+  async checkHealth(): Promise<boolean> {
+    try {
+      await this.transporter.verify();
+      return true;
+    } catch(error) {
+      Logger.error(`Mailer Health Error: ${error}`);
+      return false;
+    }
   }
 
   async sendEmail(options: SendMailOptions): Promise<boolean> {

@@ -1,7 +1,7 @@
 {
   "name": "mindsave-backend",
   "version": "1.0.0",
-  "description": "Backend para la aplicación Mindsave desarrollada con Node.js, Express y Mongo DB",
+  "description": "Backend para la aplicación Mindsave desarrollada con Node.js, Express, TypeScript, Prisma y PostgreSQL",
   "keywords": [
     "mindsave",
     "backend"
@@ -36,6 +36,7 @@
     "@types/nodemailer": "^7.0.9",
     "@types/pg": "^8.16.0",
     "@types/supertest": "^6.0.3",
+    "@types/swagger-ui-express": "^4.1.8",
     "jest": "^30.2.0",
     "nodemon": "^3.1.11",
     "prisma": "^7.9.1",
@@ -58,6 +59,7 @@
     "multer": "^2.0.2",
     "nodemailer": "^8.0.1",
     "pg": "^8.18.0",
+    "swagger-ui-express": "^5.0.1",
     "winston": "^3.19.0",
     "zod": "^4.3.6",
     "zod-validation-error": "^5.0.0"

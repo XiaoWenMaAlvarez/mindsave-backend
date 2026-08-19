@@ -33,6 +33,16 @@ export class GeminiService {
     this.model = options.model ?? "gemini-3-flash-preview";
   }
 
+  async checkHealth(): Promise<boolean> {
+    try {
+      await this.ai.models.get({ model: this.model });
+      return true;
+    } catch(e) {
+      Logger.error(`Gemini Health Error: ${e}`);
+      return false;
+    }
+  }
+
   // TAMBIÉN ACEPTA PDFs, csv, texto plano, markdown, html, json
   async uploadFiles(files: Express.Multer.File[]) {
     try {

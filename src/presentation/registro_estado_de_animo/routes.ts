@@ -16,7 +16,7 @@ export class RegistroEstadoDeAnimoRouter {
     router.get("/pendientes", [AuthMiddleware.validateJWTUser], registroEstadoDeAnimoController.getRegistroEstadoDeAnimoPendientes);
     router.get("/completos", [AuthMiddleware.validateJWTUser], registroEstadoDeAnimoController.getRegistroEstadoDeAnimoCompletos);
     router.put("/", [AuthMiddleware.validateJWTUser], registroEstadoDeAnimoController.editarRegistroEstadoDeAnimo);
-    router.delete("/:idRegistro", [AuthMiddleware.validateJWTUser], registroEstadoDeAnimoController.eliminarTestBreveEstadoDeAnimo);
+    router.delete("/:idRegistro", [AuthMiddleware.validateJWTUser], registroEstadoDeAnimoController.eliminarRegistroEstadoDeAnimo);
     router.get("/:idRegistro", [AuthMiddleware.validateJWTUser], registroEstadoDeAnimoController.getRegistroEstadoDeAnimoById);
 
 

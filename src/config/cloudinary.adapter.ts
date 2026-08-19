@@ -10,6 +10,16 @@ cloudinary.config({
 
 export class FilesRepositoryService {
   
+  async checkHealth(): Promise<boolean> {
+    try {
+      const response = await cloudinary.api.ping();
+      return response.status === 'ok';
+    } catch(e) {
+      Logger.error(`Cloudinary Health Error: ${e}`);
+      return false;
+    }
+  }
+
   // TAMBIÉN ACEPTA DOCUMENTOS, AUDIOS Y VIDEOS
   async uploadImages(files: Express.Multer.File[]): Promise<UploadApiResponse[]> {
     try {

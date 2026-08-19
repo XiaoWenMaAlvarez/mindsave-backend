@@ -1,6 +1,7 @@
 .vscode
 /postgres/
 /uploads/
+/.codex-*/
 # Logs
 logs
 *.log

@@ -1,6 +1,8 @@
 import express, { Router } from 'express';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { type Server as HttpServer } from 'node:http';
+import { Logger } from '../config/logger.plugin.js';
+import { prisma } from '../data/index.js';
+import { ErrorMiddleware } from './middlewares/init.js';
 
 interface Options {
   port: number;
@@ -13,6 +15,7 @@ export class Server {
   public readonly app = express();
   private readonly port: number;
   private readonly routes: Router;
+  private serverListener?: HttpServer | undefined;
 
   constructor(options: Options) {
     const { port, routes } = options;
@@ -26,10 +29,43 @@ export class Server {
     this.app.use( express.urlencoded({ extended: true }) ); // Para el formulario de recuperar contraseña
 
     this.app.use( this.routes );
+
+    this.app.use( ErrorMiddleware.handleError );
     
-    this.app.listen(this.port, () => {
+    this.serverListener = this.app.listen(this.port, () => {
       console.log(`Server running on port ${ this.port }`);
     });
 
+    this.setupGracefulShutdown();
+  }
+
+  public async close(): Promise<void> {
+    if (this.serverListener && this.serverListener.listening) {
+      await new Promise<void>((resolve, reject) => {
+        this.serverListener!.close((err) => {
+          if (err) return reject(err);
+          resolve();
+        });
+      });
+    }
+    this.serverListener = undefined;
+    await prisma.$disconnect();
+  }
+
+  private setupGracefulShutdown() {
+    const shutdown = async (signal: string) => {
+      Logger.info(`Recibida señal ${signal}. Cerrando servidor HTTP y desconectando base de datos...`);
+      try {
+        await this.close();
+        Logger.info("Cierre ordenado completado con éxito.");
+        process.exit(0);
+      } catch (error) {
+        Logger.error(`Error durante el cierre ordenado: ${error}`);
+        process.exit(1);
+      }
+    };
+
+    process.on('SIGINT', () => shutdown('SIGINT'));
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
   }
 }

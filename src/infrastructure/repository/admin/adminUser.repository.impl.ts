@@ -17,14 +17,14 @@ export class AdminUserRepositoryImpl implements AdminUserRepository {
   getUserById(userId: string): Promise<UserEntity | string> {
     return this.adminUserDatasource.getUserById(userId);
   }
-  updateUser(user: UserEntity): Promise<void> {
+  updateUser(user: UserEntity): Promise<string | null> {
     return this.adminUserDatasource.updateUser(user);
   }
-  deleteUser(userId: string): Promise<void> {
+  deleteUser(userId: string): Promise<string | null> {
     return this.adminUserDatasource.deleteUser(userId);
   }
 
-  restoreUser(userId: string): Promise<void> {
+  restoreUser(userId: string): Promise<string | null> {
     return this.adminUserDatasource.restoreUser(userId)
   }
 

@@ -13,10 +13,8 @@ export class CreateUserAdmin implements RegisterUserAdminUseCase {
   async execute(user: UserEntity): Promise<UserEntity> {
     user.password = bcryptAdapter.hash(user.password);
     const error = await this.adminUserRepository.createUser(user);
-    if (error) throw CustomError.badRequest(error.toString());
-
+    if (error) throw CustomError.badRequest(error);
     user.password = "";
-
     return user;
   }
 
