@@ -3,6 +3,8 @@ import { type Server as HttpServer } from 'node:http';
 import { Logger } from '../config/logger.plugin.js';
 import { prisma } from '../data/index.js';
 import { ErrorMiddleware } from './middlewares/init.js';
+import cors from 'cors';
+
 
 interface Options {
   port: number;
@@ -25,6 +27,13 @@ export class Server {
 
   async start() {
     this.app.use( express.json() );
+
+    this.app.use(cors({
+      origin: 'http://localhost:5173', // O '*' en desarrollo
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      credentials: true
+    }));
     
     this.app.use( express.urlencoded({ extended: true }) ); // Para el formulario de recuperar contraseña
 
