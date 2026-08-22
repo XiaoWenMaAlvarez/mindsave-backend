@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { CustomError, UserEntity, type AdminUserRepository } from "../../../domain/init.js";
-import { UserAdminDTO, PaginationDto } from "../../validators/ini.js";
+import { UserAdminDTO, PaginationDto, AdminGetUsersQueryDTO } from "../../validators/ini.js";
 import { CreateUserAdmin } from "../../../domain/init.js";
 import { isValidUuid } from '../../validators/ini.js';
 import { bcryptAdapter } from "../../../config/bcrypt.adapter.js";
@@ -23,12 +23,19 @@ export class AdminUserController {
 
 
   public getUsers = (req: Request, res: Response, next: NextFunction) => {
-    const {page = 1, limit = 10} = req.query;
-    const [error, paginationDto] = PaginationDto.create(+page, +limit);
-    if(error) return next(CustomError.badRequest(error));
+    const {page = 1, limit = 10, query = "", emailVerify = "", rol = "", state = ""} = req.query;
 
-    this.adminAuthRepository.getUsers(paginationDto!.page, paginationDto!.limit)
-      .then((results) => res.json({results: results.map(r => r.toJson()), page, limit}))
+    const [errorQuery, adminGetUsersQueryDTO] = AdminGetUsersQueryDTO.getUserByPageAndQuery({page, limit, query, emailVerify, rol, state});
+    if(errorQuery) return next(CustomError.badRequest(errorQuery));
+    
+
+    this.adminAuthRepository.getUsers(adminGetUsersQueryDTO!.page, adminGetUsersQueryDTO!.limit, adminGetUsersQueryDTO!.query, adminGetUsersQueryDTO!.emailVerify, adminGetUsersQueryDTO!.rol, adminGetUsersQueryDTO!.state)
+      .then((data) => res.json({
+        results: data.results.map(r => r.toJson()),
+        totalPages: data.totalPages,
+        page: adminGetUsersQueryDTO!.page,
+        limit: adminGetUsersQueryDTO!.limit
+      }))
       .catch(next);
   }
 

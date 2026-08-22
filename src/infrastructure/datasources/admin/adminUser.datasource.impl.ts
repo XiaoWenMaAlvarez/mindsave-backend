@@ -38,28 +38,69 @@ export class AdminUserDatasourceImpl implements AdminUserDatasource {
     return null;
   }
 
-  async getUsers(page?: number, limit?: number): Promise<UserEntity[]> {
+  async getUsers(page?: number, limit?: number, query?: string, emailVerify?: string, rol?: string, state?: string): Promise<{results: UserEntity[], totalPages: number}> {
     limit = limit ?? 10;
     page = page ?? 1;
-    const usuarios = await prisma.user.findMany({
-      take: limit,
-      skip: page * limit - limit,
-      include: {
-        role: true
-      },
-    });
+    const cleanQuery = query?.trim();
+    const cleanEmailVerify = emailVerify?.trim();
+    const cleanRol = rol?.trim();
+    const cleanState = state?.trim();
 
-    if (!usuarios) return [];
+    // WHERE (name ILIKE '%query%' OR email ILIKE '%query%')
+    const where: any = {};
 
-    return usuarios.map((user) => UserEntity.fromJson({
-      id: user.id, 
-      email: user.email, 
-      name: user.name, 
-      password: "", 
-      emailVerified: user.emailVerified, 
-      role: user.role.description,
-      isActive: user.isActive
-    }))
+    if (cleanQuery) {
+      where.OR = [
+        { name: { contains: cleanQuery, mode: 'insensitive' as const } },
+        { email: { contains: cleanQuery, mode: 'insensitive' as const } },
+      ];
+    }
+
+    if(cleanEmailVerify){
+      where.emailVerified = cleanEmailVerify === "verify" ? true : false;
+    }
+
+    if(cleanRol){
+      const role = cleanRol === TipoRol.PROFESIONAL_ROL ? TipoRol.PROFESIONAL_ROL : TipoRol.USER_ROL
+      const findRole = await prisma.role.findUnique({
+        where: {
+          description: role
+        }
+      });
+      
+      if(findRole != null) where.roleId = findRole.id
+    }
+
+    if(cleanState){
+      where.isActive = cleanState === "active" ? true : false;
+    }
+
+    const [usuarios, totalUsuarios] = await Promise.all([
+      prisma.user.findMany({
+        take: limit,
+        skip: page * limit - limit,
+        where,
+        include: {
+          role: true
+        },
+      }),
+      prisma.user.count({ where })
+    ]);
+
+    const totalPages = Math.max(1, Math.ceil(totalUsuarios / limit));
+
+    return {
+      results: usuarios.map((user) => UserEntity.fromJson({
+        id: user.id, 
+        email: user.email, 
+        name: user.name, 
+        password: "", 
+        emailVerified: user.emailVerified, 
+        role: user.role.description,
+        isActive: user.isActive
+      })),
+      totalPages
+    }
   }
 
   async getUserById(userId: string): Promise<UserEntity | string> {
