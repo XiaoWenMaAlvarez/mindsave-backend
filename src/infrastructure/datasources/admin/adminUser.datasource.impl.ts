@@ -6,7 +6,7 @@ import { TipoRol } from '../../../generated/prisma/enums.js';
 
 export class AdminUserDatasourceImpl implements AdminUserDatasource {
 
-  async createUser(user: UserEntity): Promise<string | null> {
+  async createUser(user: UserEntity): Promise<string | UserEntity> {
     const isEmailRepeat = await prisma.user.findUnique({
       where: {
         email: user.email
@@ -25,17 +25,28 @@ export class AdminUserDatasourceImpl implements AdminUserDatasource {
 
     if(findRole == null) return "Invalid role";
 
-    await prisma.user.create({
+    const newUser = await prisma.user.create({
       data: {
         email: user.email,
         name: user.name,
         password: user.password,
         roleId: findRole.id,
         emailVerified: user.emailVerified
+      },
+      include: {
+        role: true
       }
     });
 
-    return null;
+    return UserEntity.fromJson({
+      id: newUser.id, 
+      email: newUser.email, 
+      name: newUser.name, 
+      password: "", 
+      emailVerified: newUser.emailVerified, 
+      role: newUser.role.description,
+      isActive: newUser.isActive
+    });
   }
 
   async getUsers(page?: number, limit?: number, query?: string, emailVerify?: string, rol?: string, state?: string): Promise<{results: UserEntity[], totalPages: number}> {

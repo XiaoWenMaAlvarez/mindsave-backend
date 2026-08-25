@@ -8,7 +8,7 @@ export class AdminUserRepositoryImpl implements AdminUserRepository {
     private readonly adminUserDatasource: AdminUserDatasource
   ){}
 
-  createUser(user: UserEntity): Promise<string | null> {
+  createUser(user: UserEntity): Promise<string | UserEntity> {
     return this.adminUserDatasource.createUser(user);
   }
   getUsers(page?: number, limit?: number, query?: string, emailVerify?: string, rol?: string, state?: string): Promise<{results: UserEntity[], totalPages: number}> {
