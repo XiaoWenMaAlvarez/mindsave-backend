@@ -57,7 +57,8 @@ export class AdminUserController {
     const [error, userEntity] = UserAdminDTO.editeUser(req.body, idUsuario);
     if(error) return res.status(400).json({error});
 
-    userEntity!.password = bcryptAdapter.hash(userEntity!.password);
+    if (userEntity?.password) userEntity.password = bcryptAdapter.hash(userEntity.password);
+    
     
     this.adminAuthRepository.updateUser(userEntity!)
       .then((result: string | null) => {

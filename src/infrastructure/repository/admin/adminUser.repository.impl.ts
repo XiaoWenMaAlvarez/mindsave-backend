@@ -1,4 +1,4 @@
-import type { UserEntity } from '../../../domain/init.js';
+import type { UserEntity, UserEditInterface } from '../../../domain/init.js';
 import type { AdminUserRepository } from '../../../domain/repository/init.js';
 import { AdminUserDatasource } from '../../../domain/datasources/init.js';
 
@@ -17,7 +17,7 @@ export class AdminUserRepositoryImpl implements AdminUserRepository {
   getUserById(userId: string): Promise<UserEntity | string> {
     return this.adminUserDatasource.getUserById(userId);
   }
-  updateUser(user: UserEntity): Promise<string | null> {
+  updateUser(user: UserEditInterface): Promise<string | null> {
     return this.adminUserDatasource.updateUser(user);
   }
   deleteUser(userId: string): Promise<string | null> {

@@ -1,5 +1,5 @@
 import { AdminUserDatasource } from '../../../domain/datasources/init.js';
-import { UserEntity } from '../../../domain/init.js';
+import { UserEntity, type UserEditInterface } from '../../../domain/init.js';
 import { prisma } from "../../../data/index.js";
 import { TipoRol } from '../../../generated/prisma/enums.js';
 
@@ -138,7 +138,7 @@ export class AdminUserDatasourceImpl implements AdminUserDatasource {
   }
 
 
-  async updateUser(user: UserEntity): Promise<string | null> {
+  async updateUser(user: UserEditInterface): Promise<string | null> {
     const usuarioParaEditar = await prisma.user.findFirst({
       where: {
         id: user.id,
@@ -147,7 +147,7 @@ export class AdminUserDatasourceImpl implements AdminUserDatasource {
 
     if(usuarioParaEditar == null) return "ID not found";
 
-    if(usuarioParaEditar.email !== user.email){
+    if( user.email && usuarioParaEditar.email !== user.email){
       const isEmailRepeat = await prisma.user.findUnique({
         where: {
           email: user.email
@@ -156,27 +156,37 @@ export class AdminUserDatasourceImpl implements AdminUserDatasource {
       if(isEmailRepeat != null) return "Email already exists";
     }
 
-    const roleDescription = user.role === TipoRol.PROFESIONAL_ROL ? TipoRol.PROFESIONAL_ROL : TipoRol.USER_ROL
+    let roleId: number | undefined;
+    if (user.role) {
+      const roleDescription = user.role === TipoRol.PROFESIONAL_ROL ? TipoRol.PROFESIONAL_ROL : TipoRol.USER_ROL;
+      const role = await prisma.role.findFirst({
+        where: {
+          description: roleDescription
+        }
+      });
+      if (role == null) return "Invalid role";
+      roleId = role.id;
+    }
 
-    const role = await prisma.role.findFirst({
-      where: {
-        description: roleDescription
-      }
-    })
+    const data: {
+      email?: string;
+      name?: string;
+      password?: string;
+      emailVerified?: boolean;
+      roleId?: number;
+    } = {};
 
-    if(role == null) return "Invalid role";
+    if (user.email !== undefined) data.email = user.email;
+    if (user.name !== undefined) data.name = user.name;
+    if (user.password !== undefined) data.password = user.password;
+    if (user.emailVerified !== undefined) data.emailVerified = user.emailVerified;
+    if (roleId !== undefined) data.roleId = roleId;
 
     await prisma.user.update({
       where: {
         id: user.id
       },
-      data: {
-        email: user.email,
-        name: user.name,
-        password: user.password,
-        emailVerified: user.emailVerified,
-        roleId: role.id
-      }
+      data
     });
 
     return null;

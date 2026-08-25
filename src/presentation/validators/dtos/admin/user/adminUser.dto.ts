@@ -1,4 +1,4 @@
-import { UserEntity } from "../../../../../domain/entities/init.js";
+import { UserEntity, type UserEditInterface } from "../../../../../domain/entities/init.js";
 import { isValidEsquemaAdminRegisterUser, isValidUuid } from "../../../schemas/init.js";
 
 export interface UserAdmin {
@@ -24,21 +24,22 @@ export class UserAdminDTO {
     })];
   }
 
-  static editeUser(body: {[key: string]: any}, idUser: string): [string | null, UserEntity | null] {
+  static editeUser(body: {[key: string]: any}, idUser: string): [string | null, UserEditInterface | null] {
     const result = isValidEsquemaAdminRegisterUser(body);
     if(typeof result === "string") return [result, null];
 
     const isValidId: boolean | string = isValidUuid(idUser);
     if(isValidId !== true) return ["Invalid id", null];
 
-    return [null, UserEntity.fromJson({
+    return [null, {
       id: idUser,
-      email: body.email,
-      name: body.name,
-      password: body.password,
-      emailVerified: body.emailVerified,
-      role: body.role
-    })];
+      ...(body.email && {email: body.email}),
+      ...(body.name && {name: body.name}),
+      ...(body.password && {password: body.password}),
+      ...(body.emailVerified !== undefined && {emailVerified: body.emailVerified}),
+      ...(body.role && {role: body.role}),
+      ...(body.isActive && {isActive: body.isActive})
+    }];
   }
 
 }
