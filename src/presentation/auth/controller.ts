@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { CustomError, UserEntity, type UserRepository, ResetPasswordUseCase } from "../../domain/init.js";
+import { CustomError, UserEntity, type UserRepository, ResetPasswordUseCase, ResendEmailVerification } from "../../domain/init.js";
 import { UserDTO } from "../validators/dtos/auth/user.dto.js";
 import { JwtAdapter } from "../../config/jwt.adapter.js";
 import { EmailService } from "../../config/nodemailer.adapter.js";
@@ -34,6 +34,18 @@ export class AuthController {
       .execute(token)
       .then(() => res.status(200).send(emailValidatePage()))
       .catch(() => res.status(400).send(emailValidatePageError()));
+  }
+
+  resendEmailVerification = (req: Request, res: Response, next: NextFunction) => {
+    const email = req.body?.email;
+    if(typeof email !== 'string' || isValidEmail(email) !== true) {
+      return res.status(400).json({error: "Invalid email"});
+    }
+
+    new ResendEmailVerification(this.userRepository, this.emailService, this.verifyEmailUrl)
+      .execute(email.trim())
+      .then(() => res.status(200).json({message: "OK"}))
+      .catch(next);
   }
 
   resetPassword = (req: Request, res: Response, next: NextFunction) => {

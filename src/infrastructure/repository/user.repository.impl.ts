@@ -11,6 +11,9 @@ export class UserRepositoryImpl implements UserRepository {
   findActiveUserById(id: string): Promise<UserEntity | null> {
     return this.userDatasource.findActiveUserById(id);
   }
+  findUnverifiedUserByEmail(email: string): Promise<Pick<UserEntity, "email" | "name"> | null> {
+    return this.userDatasource.findUnverifiedUserByEmail(email);
+  }
   verifyUserByEmailAndToken(email: string, token: string): Promise<boolean | null> {
     return this.userDatasource.verifyUserByEmailAndToken(email, token);
   }

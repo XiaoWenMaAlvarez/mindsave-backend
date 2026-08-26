@@ -1,6 +1,8 @@
 import { describe, expect, test } from "@jest/globals";
 import { swaggerDocument } from "../src/config/swagger.config.js";
 import { AdminUserRouter } from "../src/presentation/admin/user/routes.js";
+import { AuthRouter } from "../src/presentation/auth/routes.js";
+import type { EmailService } from "../src/config/nodemailer.adapter.js";
 
 interface OpenApiSchema {
   $ref?: string;
@@ -58,6 +60,7 @@ describe("Contrato OpenAPI sincronizado con Express y Zod", () => {
     const expectedOperations: Record<string, HttpMethod[]> = {
       "/health": ["get"],
       "/api/auth/register": ["post"],
+      "/api/auth/resend-validation-email": ["post"],
       "/api/auth/login": ["post"],
       "/api/auth/validate-email/{token}": ["get"],
       "/api/auth/reset-password": ["post"],
@@ -121,6 +124,21 @@ describe("Contrato OpenAPI sincronizado con Express y Zod", () => {
 
     expect(putPaths.indexOf("/restore-user/:idUsuario")).toBeGreaterThanOrEqual(0);
     expect(putPaths.indexOf("/restore-user/:idUsuario")).toBeLessThan(putPaths.indexOf("/:idUsuario"));
+  });
+
+  test("la ruta de reenvío de validación está registrada como POST", () => {
+    interface RouterLayer {
+      route?: {
+        path: string;
+        methods: Record<string, boolean>;
+      };
+    }
+
+    const router = AuthRouter.routes({} as unknown as EmailService);
+    const stack = (router as unknown as { stack: RouterLayer[] }).stack;
+    const resendRoute = stack.find(layer => layer.route?.path === "/resend-validation-email");
+
+    expect(resendRoute?.route?.methods.post).toBe(true);
   });
 
   test("los DTO clínicos reflejan todos los campos obligatorios de Zod", () => {

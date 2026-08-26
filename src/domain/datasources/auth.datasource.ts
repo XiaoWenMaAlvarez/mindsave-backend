@@ -4,6 +4,7 @@ export abstract class UserDatasource {
   abstract register(user: UserEntity): Promise<string | null>;
   abstract login(email: string, password: string): Promise<UserEntity | string>;
   abstract findActiveUserById(id: string): Promise<UserEntity | null>;
+  abstract findUnverifiedUserByEmail(email: string): Promise<Pick<UserEntity, "email" | "name"> | null>;
   abstract validateEmail(token: string): Promise<boolean>;
   abstract verifyUserByEmail(email: string): Promise<boolean | null>;
   abstract verifyUserByEmailAndToken(email: string, token: string): Promise<boolean | null>;

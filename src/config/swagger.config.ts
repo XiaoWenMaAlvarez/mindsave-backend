@@ -76,6 +76,13 @@ export const swaggerDocument: JsonObject = {
           password: { type: "string", minLength: 6, example: "Password123!" }
         }
       },
+      ResendEmailVerificationDto: {
+        type: "object",
+        required: ["email"],
+        properties: {
+          email: { type: "string", format: "email", example: "juan.perez@example.com" }
+        }
+      },
       AuthResponse: {
         type: "object",
         required: ["id", "email", "name", "role", "token"],
@@ -585,6 +592,37 @@ export const swaggerDocument: JsonObject = {
         responses: {
           "201": { description: "Usuario registrado con éxito" },
           "400": { description: "Datos inválidos", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/api/auth/resend-validation-email": {
+      post: {
+        tags: ["Auth"],
+        summary: "Reenviar correo de validación de cuenta",
+        description: "Por privacidad, responde de la misma forma si el correo no existe, ya fue validado o no corresponde a una cuenta de usuario activa.",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ResendEmailVerificationDto" }
+            }
+          }
+        },
+        responses: {
+          "200": {
+            description: "Solicitud procesada; se envía un enlace nuevo si la cuenta está pendiente de validación",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["message"],
+                  properties: { message: { type: "string", enum: ["OK"] } }
+                }
+              }
+            }
+          },
+          "400": { description: "Email inválido", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          "500": { description: "No fue posible generar el enlace o enviar el correo" }
         }
       }
     },

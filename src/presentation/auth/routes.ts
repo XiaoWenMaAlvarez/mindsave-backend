@@ -22,6 +22,7 @@ export class AuthRouter {
 
     router.post("/login", authController.loginUser);
     router.post("/register", authController.registerUser);
+    router.post("/resend-validation-email", authController.resendEmailVerification);
     router.get("/validate-email/:token", authController.validateEmail);
     
     router.post("/reset-password", authController.resetPassword);

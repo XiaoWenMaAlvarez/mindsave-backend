@@ -6,6 +6,23 @@ import { bcryptAdapter } from '../../config/bcrypt.adapter.js';
 
 export class UserDatasourceImpl implements UserDatasource {
 
+  async findUnverifiedUserByEmail(email: string): Promise<Pick<UserEntity, "email" | "name"> | null> {
+    return prisma.user.findFirst({
+      where: {
+        email,
+        emailVerified: false,
+        isActive: true,
+        role: {
+          description: "USER_ROL",
+        },
+      },
+      select: {
+        email: true,
+        name: true,
+      },
+    });
+  }
+
   async findActiveUserById(id: string): Promise<UserEntity | null> {
     const user = await prisma.user.findUnique({
       where: {
