@@ -15,8 +15,6 @@ export class AdminAuthRouter {
     const adminAuthController = new AdminAuthController(adminAuthRepository);
 
     router.post("/login", adminAuthController.loginUser);
-    router.post("/register", adminAuthController.registerUser);
-
     
     router.get("/check-status", [AuthMiddleware.validateJWTAdmin], adminAuthController.checkStatus);
 

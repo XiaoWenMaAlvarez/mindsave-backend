@@ -2,23 +2,12 @@ import type { NextFunction, Request, Response } from "express";
 import { CustomError, UserEntity, type AdminAuthRepository } from "../../../domain/init.js";
 import { UserDTO } from "../../validators/dtos/auth/user.dto.js";
 import { JwtAdapter } from "../../../config/jwt.adapter.js";
-import { RegisterAdmin } from "../../../domain/init.js";
 
 export class AdminAuthController {
 
   constructor(
     private readonly adminAuthRepository: AdminAuthRepository,
   ){}
-
-  registerUser = (req: Request, res: Response, next: NextFunction) => {
-    const [error, userEntity] = UserDTO.register(req.body);
-    if(error) return res.status(400).json({error});
-
-    new RegisterAdmin(this.adminAuthRepository)
-      .execute(userEntity!)
-      .then((data: UserEntity) => res.status(201).json(data.toJson()))
-      .catch(next);
-  }
 
 
   loginUser = (req: Request, res: Response, next: NextFunction) => {

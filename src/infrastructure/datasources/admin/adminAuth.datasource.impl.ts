@@ -35,44 +35,5 @@ export class AdminAuthDatasourceImpl implements AdminAuthDatasource {
       role: user.role.description
     });
 
-  }
-
-    async register(user: UserEntity): Promise<string | UserEntity> {
-    const isEmailRepeat = await prisma.user.findUnique({
-      where: {
-        email: user.email
-        }
-    });
-
-    if(isEmailRepeat != null) return "Email already exists";
-
-    const findRole = await prisma.role.findUnique({
-      where: {
-        description: "PROFESIONAL_ROL"
-      }
-    });
-
-    if(findRole == null) return "Undefined role";
-
-    const userCreated = await prisma.user.create({
-      data: {
-        email: user.email,
-        name: user.name,
-        password: user.password,
-        roleId: findRole.id,
-        emailVerified: true
-      }
-    });
-
-    return UserEntity.fromJson({
-      id: userCreated.id,
-      email: userCreated.email,
-      name: userCreated.name,
-      password: userCreated.password,
-      emailVerified: userCreated.emailVerified,
-      role: "PROFESIONAL_ROL"
-    });
-  }
-  
-  
+  }  
 }

@@ -8,12 +8,8 @@ export class AdminAuthRepositoryImpl implements AdminAuthRepository {
     private readonly adminAuthDatasource: AdminAuthDatasource
   ){}
 
-  register(user: UserEntity): Promise<string | UserEntity> {
-    return this.adminAuthDatasource.register(user);
-  }
   login(email: string, password: string): Promise<UserEntity | string> {
     return this.adminAuthDatasource.login(email, password);
   }
-
   
 }
