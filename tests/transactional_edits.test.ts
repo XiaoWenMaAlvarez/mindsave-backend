@@ -14,7 +14,7 @@ import { TestBreveEstadoDeAnimoDatasourceImpl } from "../src/infrastructure/data
 
 const createTestBreve = (): TestBreveEstadoDeAnimo => TestBreveEstadoDeAnimo.fromJson({
   idUsuario: "user-123",
-  fecha: new Date(2026, 7, 26, 10, 30),
+  fecha: new Date(Date.UTC(2026, 7, 26, 10, 30)),
   notas: "nota actualizada",
   depresion: {
     tristeza: 1,
@@ -56,7 +56,7 @@ const createRegistro = (): RegistroEstadoAnimo => {
   return {
     id: "registro-123",
     idUsuario: "user-123",
-    fecha: new Date(2026, 7, 26, 11, 0),
+    fecha: new Date(Date.UTC(2026, 7, 26, 11, 0)),
     sucesoTrastornador: "Situación actualizada",
     grupoEmociones1: group,
     grupoEmociones2: group,

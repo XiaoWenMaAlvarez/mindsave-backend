@@ -10,7 +10,14 @@ const percentageSchema = z.number("El porcentaje de creencia debe ser un número
 const registroEstadoDeAnimoSchema = z.object({
   id: z.string().optional(),
   idUsuario: z.uuid("El id de usuario debe ser un uuid"),
-  fecha: z.string("La fecha debe ser un string"),
+  fecha: z.string({ message: "La fecha debe ser un string" })
+    .refine((val) => {
+      if (typeof val !== "string" || val.trim() === "") return false;
+      const timestamp = Date.parse(val);
+      if (isNaN(timestamp)) return false;
+      const date = new Date(val);
+      return !isNaN(date.getTime());
+    }, { message: "La fecha debe ser una fecha válida" }),
   sucesoTrastornador: z.string("El suceso trastornador debe ser un string").min(1, "El suceso trastornador debe tener al menos un carácter"),
   
   grupoEmociones1: z.object({

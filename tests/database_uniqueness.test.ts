@@ -11,7 +11,7 @@ const userId = "0f2cb907-c53f-4218-b728-01c4639bf70a";
 
 const createTestBreve = (): TestBreveEstadoDeAnimo => TestBreveEstadoDeAnimo.fromJson({
   idUsuario: userId,
-  fecha: new Date(2026, 7, 26, 23, 30),
+  fecha: new Date(Date.UTC(2026, 7, 26, 23, 30)),
   notas: "nota",
   depresion: {
     tristeza: 1,

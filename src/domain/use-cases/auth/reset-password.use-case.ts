@@ -43,6 +43,8 @@ export class ResetPasswordUseCase implements ResetPasswordUseCaseInterface {
 
   
   async setNewPassword(token: string, password: string): Promise<boolean> {
+    if(typeof token !== "string" || token.trim() === "") return false;
+    if(typeof password !== "string" || password.length < 6) return false;
     const payload = JwtAdapter.validateToken<{email: string}>(token, "password-reset");
     if(payload == null || typeof payload.email !== "string" || payload.email.trim() === "") return false;
     const newPassword = bcryptAdapter.hash(password);

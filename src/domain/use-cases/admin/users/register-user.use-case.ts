@@ -11,6 +11,9 @@ export class CreateUserAdmin implements RegisterUserAdminUseCase {
   ) {}
 
   async execute(user: UserEntity): Promise<UserEntity> {
+    if (!user.password || typeof user.password !== "string" || user.password.length < 6) {
+      throw CustomError.badRequest("La contraseña debe tener al menos 6 caracteres");
+    }
     user.password = bcryptAdapter.hash(user.password);
     const result = await this.adminUserRepository.createUser(user);
     if (typeof result === "string") throw CustomError.badRequest(result);

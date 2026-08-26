@@ -61,10 +61,13 @@ export class AuthController {
 
   resetPasswordWithToken = (req: Request, res: Response, next: NextFunction) => {
     const { token } = req.params;
-    const { password } = req.body;
-    if(typeof token !== 'string') return res.status(400).json({error: "Invalid token"});
+    if(typeof token !== 'string' || token.trim() === "") return res.status(400).json({error: "Invalid token"});
+
+    const [error, resetPasswordDto] = UserDTO.resetPassword(req.body);
+    if(error) return res.status(400).json({error});
+
     new ResetPasswordUseCase(this.userRepository, this.emailService, this.resetPasswordUrl)
-      .setNewPassword(token, password)
+      .setNewPassword(token, resetPasswordDto!.password)
       .then((result: boolean) => {
         if(result) return res.send(resetPasswordSuccessPage());
         return res.send(resetPasswordFailedPage());

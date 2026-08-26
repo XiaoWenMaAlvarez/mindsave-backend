@@ -158,7 +158,7 @@ export class TestBreveEstadoDeAnimoDatasourceImpl implements TestBreveEstadoDeAn
   }
 
   private getFechaDia(fecha: Date): Date {
-    return new Date(Date.UTC(fecha.getFullYear(), fecha.getMonth(), fecha.getDate()));
+    return new Date(Date.UTC(fecha.getUTCFullYear(), fecha.getUTCMonth(), fecha.getUTCDate()));
   }
 
   private isUniqueConstraintViolation(error: unknown): boolean {

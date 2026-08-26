@@ -1,8 +1,12 @@
 import { UserEntity } from "../../../../domain/entities/init.js";
-import { isValidEsquemaRegisterUser, isValidEsquemaLoginUser } from "../../schemas/init.js";
+import { isValidEsquemaRegisterUser, isValidEsquemaLoginUser, isValidEsquemaResetPasswordSubmit } from "../../schemas/init.js";
 
 export interface UserLogin {
   email: string;
+  password: string;
+}
+
+export interface ResetPasswordSubmit {
   password: string;
 }
 
@@ -30,5 +34,14 @@ export class UserDTO {
       password: body.password,
     }
     return [null, userLogin];
+  }
+
+  static resetPassword(body: {[key: string]: any}): [string | null, ResetPasswordSubmit | null] {
+    const result = isValidEsquemaResetPasswordSubmit(body);
+    if(typeof result === "string") return [result, null];
+    const resetPasswordSubmit: ResetPasswordSubmit = {
+      password: body.password,
+    };
+    return [null, resetPasswordSubmit];
   }
 }

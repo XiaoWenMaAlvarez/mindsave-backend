@@ -1,11 +1,11 @@
 import { UserEntity, type UserEditInterface } from "../../../../../domain/entities/init.js";
-import { isValidEsquemaAdminRegisterUser, isValidUuid } from "../../../schemas/init.js";
+import { isValidEsquemaAdminRegisterUser, isValidEsquemaAdminUpdateUser, isValidUuid } from "../../../schemas/init.js";
 
 export interface UserAdmin {
   email: string;
-  name: string
+  name: string;
   password: string;
-  emailVerified: string;
+  emailVerified: boolean;
   role: string;
 }
 
@@ -25,7 +25,7 @@ export class UserAdminDTO {
   }
 
   static editeUser(body: {[key: string]: any}, idUser: string): [string | null, UserEditInterface | null] {
-    const result = isValidEsquemaAdminRegisterUser(body);
+    const result = isValidEsquemaAdminUpdateUser(body);
     if(typeof result === "string") return [result, null];
 
     const isValidId: boolean | string = isValidUuid(idUser);
@@ -33,14 +33,13 @@ export class UserAdminDTO {
 
     return [null, {
       id: idUser,
-      ...(body.email && {email: body.email}),
-      ...(body.name && {name: body.name}),
-      ...(body.password && {password: body.password}),
+      ...(body.email !== undefined && {email: body.email}),
+      ...(body.name !== undefined && {name: body.name}),
+      ...(body.password !== undefined && {password: body.password}),
       ...(body.emailVerified !== undefined && {emailVerified: body.emailVerified}),
-      ...(body.role && {role: body.role}),
-      ...(body.isActive && {isActive: body.isActive})
+      ...(body.role !== undefined && {role: body.role}),
+      ...(body.isActive !== undefined && {isActive: body.isActive})
     }];
   }
 
 }
-

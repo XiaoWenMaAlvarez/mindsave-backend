@@ -45,6 +45,28 @@ export const swaggerDocument: JsonObject = {
           password: { type: "string", minLength: 6, example: "Password123!" }
         }
       },
+      AdminUserCreateDto: {
+        type: "object",
+        required: ["name", "email", "password", "role", "emailVerified"],
+        properties: {
+          name: { type: "string", example: "Juan Pérez" },
+          email: { type: "string", format: "email", example: "juan.perez@example.com" },
+          password: { type: "string", minLength: 6, example: "Password123!" },
+          role: { type: "string", enum: ["USER_ROL", "PROFESIONAL_ROL"], example: "USER_ROL" },
+          emailVerified: { type: "boolean", example: false }
+        }
+      },
+      AdminUserUpdateDto: {
+        type: "object",
+        properties: {
+          name: { type: "string", example: "Juan Pérez" },
+          email: { type: "string", format: "email", example: "juan.perez@example.com" },
+          password: { type: "string", minLength: 6, example: "Password123!" },
+          role: { type: "string", enum: ["USER_ROL", "PROFESIONAL_ROL"], example: "USER_ROL" },
+          emailVerified: { type: "boolean", example: true },
+          isActive: { type: "boolean", example: true }
+        }
+      },
       UserLoginDto: {
         type: "object",
         required: ["email", "password"],
@@ -349,6 +371,24 @@ export const swaggerDocument: JsonObject = {
           "200": { description: "Lista de usuarios" },
           "401": { description: "No autorizado" }
         }
+      },
+      post: {
+        tags: ["Admin Users"],
+        summary: "Crear nuevo usuario",
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/AdminUserCreateDto" }
+            }
+          }
+        },
+        responses: {
+          "201": { description: "Usuario creado exitosamente" },
+          "400": { description: "Error en datos enviados" },
+          "401": { description: "No autorizado" }
+        }
       }
     },
     "/admin/user/{idUsuario}": {
@@ -375,7 +415,7 @@ export const swaggerDocument: JsonObject = {
           required: true,
           content: {
             "application/json": {
-              schema: { $ref: "#/components/schemas/UserRegisterDto" }
+              schema: { $ref: "#/components/schemas/AdminUserUpdateDto" }
             }
           }
         },

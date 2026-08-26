@@ -38,7 +38,14 @@ const testBreveEstadoDeAnimoSchema = z.object({
     tenso: scoreSchema,
   }, "Error con el apartado de ansiedad emocional"),
   idUsuario: z.uuid("El id de usuario debe ser un uuid"),
-  fecha: z.string("La fecha debe ser un string"),
+  fecha: z.string({ message: "La fecha debe ser un string" })
+    .refine((val) => {
+      if (typeof val !== "string" || val.trim() === "") return false;
+      const timestamp = Date.parse(val);
+      if (isNaN(timestamp)) return false;
+      const date = new Date(val);
+      return !isNaN(date.getTime());
+    }, { message: "La fecha debe ser una fecha válida" }),
   id: z.string().optional(),
   notas: z.string().max(500).nullable(),
 }, "El test breve de estado de ánimo debe ser un objeto");
