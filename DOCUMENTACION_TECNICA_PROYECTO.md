@@ -6,12 +6,12 @@
 
 - **Proyecto:** MindSave Backend.
 - **Repositorio analizado:** `mindsave-backend`.
-- **Revisión analizada:** `d8ee6bb`, rama `main`.
-- **Fecha del análisis:** 25 de agosto de 2026.
+- **Revisión analizada:** `5535f4b` más los cambios actuales del workspace, rama `main`.
+- **Fecha del análisis:** 26 de agosto de 2026.
 - **Estado documentado:** comportamiento actual (`as-is`), no una propuesta futura.
 - **Fuentes principales:** rutas Express, controladores, validadores Zod/DTO, casos de uso, contratos de repositorio y datasource, implementaciones Prisma, `prisma/schema.prisma`, adaptadores externos, configuración del servidor y pruebas automatizadas.
 
-El código ejecutable es la fuente de verdad de este documento. La especificación OpenAPI incluida en `src/config/swagger.config.ts` se usó como fuente secundaria, porque contiene rutas y esquemas que no coinciden en varios puntos con la implementación. Las diferencias se detallan en la sección 16.
+El código ejecutable es la fuente de verdad de este documento. La especificación OpenAPI incluida en `src/config/swagger.config.ts` refleja las rutas funcionales, cuerpos, parámetros y respuestas actuales; su sincronización se resume en la sección 16.
 
 El alcance comprende:
 
@@ -39,7 +39,7 @@ MindSave Backend es una API de apoyo al bienestar mental. Permite que una person
 
 También ofrece una superficie profesional/administrativa para autenticarse y gestionar cuentas de usuario, además de un health check de las dependencias externas y documentación Swagger.
 
-La API **no** implementa en el estado actual asignación de pacientes a profesionales, consulta clínica de tests o registros por parte de profesionales, diagnóstico, alertas automáticas por riesgo suicida, notificaciones a terceros ni eliminación remota de archivos de Cloudinary/Gemini.
+La API **no** implementa en el estado actual asignación de pacientes a profesionales, consulta clínica de tests o registros por parte de profesionales, diagnóstico, alertas automáticas por riesgo suicida ni notificaciones a terceros.
 
 ## 3. Actores y sistemas externos
 
@@ -198,7 +198,7 @@ Respuestas del middleware:
 
 ## 7. Inventario efectivo de endpoints
 
-Esta tabla refleja las rutas montadas por Express, incluidas las diferencias con OpenAPI.
+Esta tabla refleja las rutas montadas por Express y documentadas en OpenAPI.
 
 | ID | Método y ruta efectiva | Acceso | Formato de entrada | Resultado principal |
 |---|---|---|---|---|
@@ -990,7 +990,9 @@ Multer devuelve 400 para MIME no permitido, tamaño superior a 5 MiB, más de ci
 - Si la persistencia falla después de haber escrito texto, no se ejecuta el cierre exitoso del controlador: el error se delega al middleware, que lo registra y aborta el stream sin intentar cambiar el status ni enviar JSON.
 - La creación conjunta es atómica: si falla cualquiera de los mensajes, sus archivos anidados o una validación previa, Prisma revierte el turno completo y no queda un mensaje aislado.
 - Si el stream falla antes de terminar, normalmente no se guarda ninguno de los dos mensajes.
-- Cloudinary y Gemini capturan sus errores de upload y devuelven arrays vacíos. Esto puede degradar silenciosamente los adjuntos o dejar copias remotas sin metadatos persistidos.
+- Cloudinary y Gemini propagan los errores de upload. El caso de uso los convierte en `502 {"error":"No fue posible subir todos los archivos adjuntos"}` antes de iniciar el stream o persistir mensajes.
+- Si un lote falla parcialmente, cada adaptador intenta eliminar de forma compensatoria los archivos de ese proveedor que sí llegaron a subirse. Si Gemini falla después de completar Cloudinary, el caso de uso elimina también las copias de Cloudinary.
+- La limpieza remota compensatoria es de mejor esfuerzo: un fallo posterior del proveedor al eliminar puede dejar un objeto remoto huérfano, pero el mensaje nunca continúa silenciosamente sin sus adjuntos.
 - Un chat inexistente o ajeno se rechaza con `Chat not found` antes de invocar Cloudinary, Gemini Files o la generación. Multer ya pudo crear temporales locales, que se eliminan en `finally`.
 - La limpieza `finally` elimina temporales tanto en éxito como en validación o fallo del proveedor; los errores Multer también tienen su propia limpieza.
 
@@ -1011,9 +1013,9 @@ Estas reglas son una instrucción al modelo, no una máquina de estados persisti
 
 **Endpoint:** `DELETE /api/chat-ia/delete-chat/:idChat`.
 
-Valida UUID y ejecuta `deleteMany` filtrado por chat y propietario. La eliminación del chat borra en cascada mensajes y filas `Archivo`. Si el chat no existe o es ajeno, devuelve igualmente `200 {"result":"success"}`.
+Valida UUID y recupera los metadatos de archivos filtrando por chat y propietario. Si el chat no existe o es ajeno, devuelve `404`.
 
-No se invoca la API de Cloudinary ni Gemini para eliminar los objetos remotos; el borrado sólo elimina el chat y sus metadatos de PostgreSQL.
+Cloudinary y Gemini reciben las eliminaciones remotas en paralelo. Si alguna falla, el endpoint devuelve `500` y conserva el chat y sus metadatos en PostgreSQL para permitir un reintento. Sólo cuando todas terminan correctamente se elimina el chat; el borrado en cascada elimina entonces sus mensajes y filas `Archivo`.
 
 ## 13. Health check, documentación y operación
 
@@ -1052,14 +1054,14 @@ Reglas de status:
 | `degraded` | 200 | PostgreSQL responde, pero al menos un servicio externo falla. |
 | `error` | 503 | PostgreSQL falla, independientemente del resto. |
 
-No se configuran timeouts propios; la latencia del endpoint depende de que terminen los cuatro checks.
+Los tres checks externos usan un timeout propio de 5 segundos. La consulta de PostgreSQL depende de los timeouts configurados por Prisma y el driver `pg`.
 
 ### 13.2 DOC-01 y DOC-02 — OpenAPI/Swagger
 
 - `GET /api-docs.json` devuelve `swaggerDocument` OpenAPI 3.0.3.
 - `/api-docs` monta Swagger UI y sus recursos estáticos; la navegación puede implicar redirect.
 
-Estos endpoints son públicos. La especificación declara `bearerAuth`, pero no refleja con fidelidad completa el router actual; véase la sección 16.
+Estos endpoints son públicos. La especificación declara `bearerAuth` en cada operación protegida y mantiene los nombres de ruta y parámetros usados por Express; véase la sección 16.
 
 ### 13.3 Logging
 
@@ -1271,10 +1273,10 @@ Para un diagrama de clases de dominio, conviene omitir routers y Prisma y usar l
 | `RegistroEstadoAnimoRepository` / datasource | `saveRegistroEstadoDeAnimo`, `getRegistroEstadoDeAnimoPendientes`, `getRegistroEstadoDeAnimoCompletos`, `getRegistroEstadoDeAnimoById`, `editarRegistroEstadoDeAnimo`, `eliminarRegistroEstadoDeAnimo` |
 | Casos de uso de registro | Una clase por operación, cada una con `execute(...)`. |
 | `ChatChatIA`, `MensajeChatIA`, `ArchivoChatIA` | `fromJson`, `toJson` |
-| `ChatIARepository` / datasource | `createNewChat`, `getChatsByUser`, `getMessagesFromChat`, `sendMessagesToChat`, `deleteChat` |
-| `SendMessageToChatUseCase` | `createUserMessage`, `createGeminiMessage`, `saveMessages`, `streamResponse`; historial/upload son privados. |
-| `GeminiService` | `checkHealth`, `uploadFiles`, `chatPromptUseCase` |
-| `FilesRepositoryService` | `checkHealth`, `uploadImages` |
+| `ChatIARepository` / datasource | `createNewChat`, `getChatsByUser`, `getMessagesFromChat`, `sendMessagesToChat`, `getFilesForChatDeletion`, `deleteChat` |
+| `SendMessageToChatUseCase` | `prepareAuthorizedUserMessage`, `createGeminiMessage`, `saveMessages`, `streamResponse`; construcción, historial y upload son privados. |
+| `GeminiService` | `checkHealth`, `uploadFiles`, `deleteFile`, `chatPromptUseCase` |
+| `FilesRepositoryService` | `checkHealth`, `uploadImages`, `deleteFile` |
 | `EmailService` | `checkHealth`, `sendEmail` |
 | `JwtAdapter` | `generateToken`, `validateToken` |
 | `AuthMiddleware` | `validateJWTUser`, `validateJWTAdmin`, `validateJWT` |
@@ -1317,24 +1319,19 @@ El repositorio incluye `compose.yaml` sólo para PostgreSQL local, expuesto en 5
 
 Para una vista de arquitectura de seguridad, los límites de confianza principales son cliente/API, API/PostgreSQL y API/cada proveedor externo. Los tests unitarios simulan esos proveedores en los escenarios cubiertos.
 
-## 16. Diferencias entre OpenAPI y la implementación
+## 16. Sincronización entre OpenAPI y la implementación
 
-| Tema | OpenAPI actual | Express/código actual |
-|---|---|---|
-| Restaurar usuario | `PUT /admin/user/restore/{idUsuario}` | `PUT /admin/user/restore-user/:idUsuario` |
-| Crear usuario administrativo | No está documentado | `POST /admin/user/` existe. |
-| Filtros administrativos | Sólo `page`, `limit` | También `query`, `emailVerify`, `rol`, `state`; límite máximo 999. |
-| Test anual | `/api/test-breve-estado-de-animo/{year}` | `/api/test-breve-estado-de-animo/by-year/:year` |
-| Test por fecha (GET) | `/api/test-breve-estado-de-animo/{year}/{month}/{day}` | `/api/test-breve-estado-de-animo/by-date/:year/:month/:day` |
-| Test DTO | `year`, `month`, `day`, `animo` 1..5 | Objeto de 22 puntuaciones 0..4, `fecha` y `notas`. |
-| Registro DTO | `animo`, `emociones`, `pensamiento`, `situacion` | Agregado expandido de diez grupos, pensamientos, porcentajes y distorsiones. |
-| Listar chats | `/api/chat-ia/chats` | `/api/chat-ia/get-chats-by-user` |
-| Historial de chat | `/api/chat-ia/messages/{idChat}` | `/api/chat-ia/get-messages-from-chat/:idChat` |
-| Health values | Ejemplos externos `ready` | Código devuelve `connected`/`disconnected`. |
-| Reset POST | Describe 400 por token/password inválidos | Token no válido normalmente devuelve HTML de fallo con 200; password no tiene validación de servidor. |
-| Rutas de auth profesional | Registro aparece como operación normal | No declara que el registro profesional está públicamente accesible y crea rol privilegiado verificado. |
+La especificación OpenAPI 3.0.3 se contrastó con los routers Express, controladores y schemas Zod actuales. La sincronización cubre:
 
-La especificación OpenAPI no debe usarse como entrada única para generar clientes, pruebas contractuales o casos de uso hasta resolver estas divergencias.
+- las rutas reales de test breve, incluido `by-year`, `by-date` y el borrado con año, mes y día;
+- el DTO completo de test breve con sus cuatro secciones, puntuaciones 0..4, fecha y notas nullable obligatorias;
+- el registro cognitivo con nueve grupos estándar, grupo personalizado, porcentajes nullable obligatorios, pensamientos y diez distorsiones;
+- cuerpos distintos para crear y editar registros, exigiendo `id` en el `PUT`;
+- las rutas reales de chat y sus respuestas `{results:[...]}` y `{result:{...}}`, con los campos `text`, `archivos`, `fileUri`, `mimeType` y `fileUrl`;
+- los seis filtros administrativos, la creación administrativa y `PUT /admin/user/restore-user/{idUsuario}`;
+- los ejemplos `connected`/`disconnected` del health check y los errores de uploads y eliminación remota.
+
+La ruta específica de restauración se registra antes de `PUT /:idUsuario` para que Express no la interprete como una actualización genérica. Una prueba contractual verifica la matriz de operaciones, los parámetros de path, las referencias locales, los campos obligatorios y los envoltorios de respuesta.
 
 ## 17. Hallazgos y limitaciones del sistema actual
 
@@ -1358,22 +1355,21 @@ Estos puntos no cambian la descripción funcional anterior; indican dónde el co
 
 ### 17.3 Integraciones y archivos
 
-1. `EmailService.sendEmail` llama `transporter.sendMail()` sin `await`; retorna `true` antes de conocer el resultado asíncrono y su `catch` no captura rechazos posteriores.
-2. Eliminar un chat no elimina archivos remotos; fallos de upload también pueden dejar objetos huérfanos.
-3. Cloudinary/Gemini convierten fallos de upload en arrays vacíos, con degradación silenciosa.
-4. No hay timeout o circuit breaker propio para health, email, uploads ni generación.
+1. La limpieza compensatoria de uploads es de mejor esfuerzo: si el proveedor también falla al eliminar, puede quedar un objeto remoto huérfano.
+2. `withTimeout` limita la espera de la API, pero no cancela la operación subyacente del SDK; una carga tardía puede sobrevivir a la respuesta HTTP. Los adaptadores mantienen una limpieza en segundo plano para esos resultados tardíos.
+3. El borrado de chat no puede ser atómico entre PostgreSQL y los proveedores externos: si la eliminación remota termina y luego falla PostgreSQL, los metadatos conservados pueden apuntar a archivos ya eliminados.
+4. No hay circuit breaker y el stream de generación de Gemini no tiene un timeout total propio.
 
 ### 17.4 Arquitectura y mantenibilidad
 
 1. Algunos casos de uso de dominio dependen de DTO/adaptadores de presentación/configuración; las capas no son completamente independientes.
 2. `src/presentation/registro_estado_de_animo/mapper/registroEstadoDeAnimoMapper.ts` no tiene consumidores. Además describe una forma alternativa (`grupoEmociones`, `listaPensamientos`) distinta del body que el controller valida realmente.
-3. La especificación OpenAPI está desalineada con varias rutas y contratos.
-4. CORS está fijado a un único origen de desarrollo.
-5. La carga inmediata de todas las variables obliga a configurar también servicios externos para importar/componer gran parte de la aplicación.
+3. CORS está fijado a un único origen de desarrollo.
+4. La carga inmediata de todas las variables obliga a configurar también servicios externos para importar/componer gran parte de la aplicación.
 
 ## 18. Pruebas y verificabilidad existente
 
-La configuración Jest ejecuta TypeScript ESM, limpia mocks y recolecta cobertura V8 en todas las corridas. Hay 5 archivos y 16 casos de prueba según la ejecución de esta revisión.
+La configuración Jest ejecuta TypeScript ESM, limpia mocks y recolecta cobertura V8 en todas las corridas. Hay 14 archivos y 112 casos de prueba según la ejecución de esta revisión.
 
 Cobertura funcional observable en pruebas:
 
@@ -1381,6 +1377,8 @@ Cobertura funcional observable en pruebas:
 - respuestas `404` y documentación OpenAPI de ambos `PUT` estrictos;
 - autorización del chat antes de uploads externos, persistencia del turno antes de finalizar el stream y propagación del fallo;
 - escritura atómica de los mensajes de usuario y modelo;
+- propagación explícita de fallos de upload como `502`, detención del flujo y limpieza compensatoria de cargas parciales en Cloudinary y Gemini;
+- eliminación remota de adjuntos al borrar un chat, conservación de PostgreSQL ante fallo externo y respuesta `404` para chats inexistentes;
 - schema y migración de unicidad, normalización de `fechaDia` y manejo de colisiones `P2002` para test y chat;
 - una prueba básica de funcionamiento de Jest.
 
@@ -1399,7 +1397,7 @@ Resultado observado durante esta revisión:
 - `npx prisma validate`: exitoso;
 - `npx prisma generate`: exitoso con Prisma Client 7.9.1;
 - `npm run build`: exitoso;
-- `npm test -- --runInBand`: 5 suites y 16 tests exitosos.
+- `npm test -- --runInBand`: 14 suites y 112 tests exitosos.
 
 Comandos definidos por el proyecto:
 

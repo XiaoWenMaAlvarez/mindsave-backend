@@ -1,6 +1,6 @@
 import type { FilesRepositoryService, GeminiService } from "../../../config/init.js";
 import type { PromptChatDTO } from "../../../presentation/validators/ini.js";
-import { ArchivoChatIA, ChatChatIA, ChatIARepository, MensajeChatIA } from "../../init.js";
+import { ArchivoChatIA, ChatChatIA, ChatIARepository, CustomError, MensajeChatIA } from "../../init.js";
 import type { Content, GenerateContentResponse } from "@google/genai";
 
 interface AuthorizedUserMessage {
@@ -34,19 +34,28 @@ export class SendMessageToChatUseCase {
   private async createUserMessage(promptChatDTO: PromptChatDTO): Promise<MensajeChatIA> {
     const prompt = promptChatDTO.prompt;
     const files = promptChatDTO.files;
+    let imagesPublic: CloudinaryUploadReference[] = [];
 
-    const imagesPublic = await this.filesRepositoryService.uploadImages(files);
-    
-    const imagesFileData = await this.uploadImagesToGemini(files, imagesPublic);
+    try {
+      imagesPublic = await this.filesRepositoryService.uploadImages(files);
+      const imagesFileData = await this.uploadImagesToGemini(files, imagesPublic);
 
-    
-    
-    return new MensajeChatIA({
-      text: prompt,
-      role: "user",
-      archivos: imagesFileData,
-      createdAt: new Date()
-    });
+      return new MensajeChatIA({
+        text: prompt,
+        role: "user",
+        archivos: imagesFileData,
+        createdAt: new Date()
+      });
+    } catch {
+      await Promise.allSettled(
+        imagesPublic.map(file => this.filesRepositoryService.deleteFile({
+          fileUrl: file.secure_url,
+          publicId: file.public_id,
+          resourceType: file.resource_type,
+        }))
+      );
+      throw CustomError.badGateway("No fue posible subir todos los archivos adjuntos");
+    }
     
   }
 

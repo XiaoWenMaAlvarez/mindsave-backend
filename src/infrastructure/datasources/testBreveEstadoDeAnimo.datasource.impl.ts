@@ -125,7 +125,9 @@ export class TestBreveEstadoDeAnimoDatasourceImpl implements TestBreveEstadoDeAn
       },
     });
 
-    if(testParaEliminar == null) return;
+    if(testParaEliminar == null) {
+      throw CustomError.notFound("Test breve no encontrado");
+    }
 
     await prisma.testBreveEstadoDeAnimo.deleteMany({
       where: {

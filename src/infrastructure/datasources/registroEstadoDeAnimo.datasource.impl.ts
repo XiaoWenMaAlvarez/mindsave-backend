@@ -1,5 +1,5 @@
 import { RegistroEstadoAnimoDatasource } from '../../domain/datasources/init.js';
-import { RegistroEstadoAnimo } from '../../domain/init.js';
+import { CustomError, RegistroEstadoAnimo } from '../../domain/init.js';
 import { prisma } from "../../data/index.js";
 import type { RegistroEstadoAnimoDB } from '../models/init.js';
 import { RegistroEstadoAnimoMapper } from '../init.js';
@@ -177,7 +177,9 @@ export class RegistroEstadoAnimoDatasourceImpl implements RegistroEstadoAnimoDat
       },
     });
 
-    if(registroParaEliminar == null) return;
+    if(registroParaEliminar == null) {
+      throw CustomError.notFound("Registro no encontrado");
+    }
 
     await prisma.$transaction([
       prisma.registroEstadoAnimo.deleteMany({

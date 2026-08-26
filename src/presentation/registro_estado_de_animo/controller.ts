@@ -69,7 +69,10 @@ export class RegistroEstadoDeAnimoController {
     if(isValidId !== true) return res.status(400).json({error: isValidId});
     const getRegistroByIdUseCase = new GetRegistroEstadoDeAnimoByIdUseCase(this.registroEstadoAnimoRepository);
     getRegistroByIdUseCase.execute(idRegistro, req.user!.id)
-      .then((reg) => res.json(reg?.toJson()))
+      .then((reg) => {
+        if (!reg) return next(CustomError.notFound("Registro no encontrado"));
+        return res.json(reg.toJson());
+      })
       .catch(next);
   }
 

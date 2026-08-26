@@ -23,10 +23,10 @@ export class AdminUserRouter {
     
     router.post("/", [authMiddleware.validateJWTAdmin], adminUserController.createUser);
     router.get("/", [authMiddleware.validateJWTAdmin], adminUserController.getUsers);
+    router.put("/restore-user/:idUsuario", [authMiddleware.validateJWTAdmin], adminUserController.restoreUser);
     router.get("/:idUsuario", [authMiddleware.validateJWTAdmin], adminUserController.getUserById);
     router.put("/:idUsuario", [authMiddleware.validateJWTAdmin], adminUserController.updateUser);
     router.delete("/:idUsuario", [authMiddleware.validateJWTAdmin], adminUserController.deleteUser);
-    router.put("/restore-user/:idUsuario", [authMiddleware.validateJWTAdmin], adminUserController.restoreUser);
 
     return router;
   }

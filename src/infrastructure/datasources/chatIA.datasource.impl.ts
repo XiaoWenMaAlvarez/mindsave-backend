@@ -167,6 +167,14 @@ export class ChatIADatasourceImpl implements ChatIADatasource {
 
   async deleteChat(idChat: string, idUsuario: string): Promise<void> {
     const user = await this.getUserById(idUsuario);
+    const chat = await prisma.chat.findFirst({
+      where: {
+        id: idChat,
+        idUsuario: user.id
+      }
+    });
+    if(!chat) throw CustomError.notFound("Chat no encontrado");
+
     await prisma.chat.deleteMany({
       where: { 
         idUsuario: user.id,
@@ -178,9 +186,9 @@ export class ChatIADatasourceImpl implements ChatIADatasource {
   private async getMessageRole(roleDescription: string, client: ChatWriteClient = prisma): Promise<RoleIaDB> {
     let tipoRole: TipoChatRol;
     if(roleDescription === "model") {
-      tipoRole = TipoChatRol.model
+      tipoRole = TipoChatRol.model;
     } else if (roleDescription === "user"){
-      tipoRole = TipoChatRol.user
+      tipoRole = TipoChatRol.user;
     } else {
       throw CustomError.badRequest("Role not found");
     }

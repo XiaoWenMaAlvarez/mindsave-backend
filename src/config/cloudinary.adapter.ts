@@ -51,26 +51,47 @@ export class FilesRepositoryService {
 
   // TAMBIÉN ACEPTA DOCUMENTOS, AUDIOS Y VIDEOS
   async uploadImages(files: Express.Multer.File[]): Promise<UploadApiResponse[]> {
+    const uploadOperations: Promise<UploadApiResponse>[] = [];
+
     try {
+      for(const file of files) {
+        uploadOperations.push(cloudinary.uploader.upload(file.path, {
+          timeout: this.uploadTimeoutMs,
+        }));
+      }
+
       const publicUrls = await withTimeout(
-        Promise.all(
-          files.map((file) => {
-            const response = cloudinary.uploader.upload(file.path, {
-              timeout: this.uploadTimeoutMs,
-            });
-            return response;
-          })
-        ),
+        Promise.all(uploadOperations),
         this.uploadTimeoutMs,
         "Cloudinary Upload Images"
       );
     
       return publicUrls;
-    } catch(e) {
-      Logger.error(`Cloudinary Upload Error: ${e}`);
-      return [];
+    } catch(error) {
+      void this.cleanupSuccessfulUploads(uploadOperations);
+      Logger.error("Cloudinary upload failed");
+      throw error;
     }
   }  
+
+  private async cleanupSuccessfulUploads(
+    uploadOperations: readonly Promise<UploadApiResponse>[],
+  ): Promise<void> {
+    await Promise.allSettled(
+      uploadOperations.map(async uploadOperation => {
+        try {
+          const uploadedFile = await uploadOperation;
+          await this.deleteFile({
+            fileUrl: uploadedFile.secure_url,
+            publicId: uploadedFile.public_id,
+            resourceType: uploadedFile.resource_type,
+          });
+        } catch {
+          // El upload fallido no creó un archivo que eliminar.
+        }
+      })
+    );
+  }
 
   async deleteFile(reference: CloudinaryFileReference): Promise<void> {
     if(!reference.publicId && !reference.fileUrl) return;

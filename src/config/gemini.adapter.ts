@@ -64,29 +64,50 @@ export class GeminiService {
 
   // TAMBIÉN ACEPTA PDFs, csv, texto plano, markdown, html, json
   async uploadFiles(files: Express.Multer.File[]) {
+    const uploadOperations: ReturnType<GoogleGenAI["files"]["upload"]>[] = [];
+
     try {
+      for(const file of files) {
+        const fileExtension = file.originalname.split('.').pop() ?? '';
+        const fileMimeType: string = fileMimeTypesByExtension[fileExtension] ?? '';
+
+        const type = file.mimetype.includes('application/octet-stream') ? fileMimeType : file.mimetype;
+
+        uploadOperations.push(this.ai.files.upload({
+          file: file.path,
+          config: { mimeType: type },
+        }));
+      }
+
       const uploadedFiles = await withTimeout(
-        Promise.all(
-          files.map((file) => {
-            const fileExtension = file.originalname.split('.').pop() ?? '';
-            const fileMimeType: string = fileMimeTypesByExtension[fileExtension] ?? '';
-
-            const type = file.mimetype.includes('application/octet-stream') ? fileMimeType : file.mimetype;
-
-            return this.ai.files.upload({
-              file: file.path,
-              config: { mimeType: type },
-            });
-          }),
-        ),
+        Promise.all(uploadOperations),
         this.uploadTimeoutMs,
         "Gemini Upload Files"
       );
       return uploadedFiles;
-    } catch(e) {
-      Logger.error(`Gemini Upload Error: ${e}`);
-      return [];
+    } catch(error) {
+      void this.cleanupSuccessfulUploads(uploadOperations);
+      Logger.error("Gemini upload failed");
+      throw error;
     }
+  }
+
+  private async cleanupSuccessfulUploads(
+    uploadOperations: readonly ReturnType<GoogleGenAI["files"]["upload"]>[],
+  ): Promise<void> {
+    await Promise.allSettled(
+      uploadOperations.map(async uploadOperation => {
+        try {
+          const uploadedFile = await uploadOperation;
+          await this.deleteFile({
+            fileName: uploadedFile.name ?? "",
+            fileUri: uploadedFile.uri ?? "",
+          });
+        } catch {
+          // El upload fallido no creó un archivo que eliminar.
+        }
+      })
+    );
   }
 
   async deleteFile(reference: GeminiFileReference): Promise<void> {

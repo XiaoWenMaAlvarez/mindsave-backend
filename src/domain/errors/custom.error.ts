@@ -27,6 +27,10 @@ export class CustomError extends Error {
     return new CustomError(message, 500);
   }
 
+  static badGateway(message: string) {
+    return new CustomError(message, 502);
+  }
+
 
 
 }

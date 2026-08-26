@@ -29,11 +29,11 @@ export class AuthController {
 
   validateEmail = (req: Request, res: Response, next: NextFunction) => {
     const { token } = req.params;
-    if(typeof token !== 'string') return res.status(400).json({error: "Invalid token"});
+    if(typeof token !== 'string' || token.trim() === "") return res.status(400).send(emailValidatePageError());
     new ValidateEmail(this.userRepository)
       .execute(token)
-      .then(() => res.send(emailValidatePage()))
-      .catch(() => res.send(emailValidatePageError()));
+      .then(() => res.status(200).send(emailValidatePage()))
+      .catch(() => res.status(400).send(emailValidatePageError()));
   }
 
   resetPassword = (req: Request, res: Response, next: NextFunction) => {
@@ -49,14 +49,14 @@ export class AuthController {
 
   resetPasswordWithTokenPage = (req: Request, res: Response, next: NextFunction) => {
     const { token } = req.params;
-    if(typeof token !== 'string' || token.trim() === "") return res.status(400).json({error: "Invalid token"});
+    if(typeof token !== 'string' || token.trim() === "") return res.status(400).send(resetPasswordErrorPage());
     
     new ResetPasswordUseCase(this.userRepository, this.emailService, this.resetPasswordUrl)
       .validateResetPasswordToken(token)
       .then((result: boolean) => {
-        if(result) return res.send(resetPasswordPage(token));
-        return res.send(resetPasswordErrorPage());
-      }).catch(next);
+        if(result) return res.status(200).send(resetPasswordPage(token));
+        return res.status(400).send(resetPasswordErrorPage());
+      }).catch(() => res.status(400).send(resetPasswordErrorPage()));
   }
 
   resetPasswordWithToken = (req: Request, res: Response, next: NextFunction) => {
@@ -69,8 +69,8 @@ export class AuthController {
     new ResetPasswordUseCase(this.userRepository, this.emailService, this.resetPasswordUrl)
       .setNewPassword(token, resetPasswordDto!.password)
       .then((result: boolean) => {
-        if(result) return res.send(resetPasswordSuccessPage());
-        return res.send(resetPasswordFailedPage());
+        if(result) return res.status(200).send(resetPasswordSuccessPage());
+        return res.status(400).send(resetPasswordFailedPage());
       }).catch(next);
   }
 

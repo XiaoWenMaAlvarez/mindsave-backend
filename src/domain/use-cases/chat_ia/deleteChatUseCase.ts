@@ -14,7 +14,9 @@ export class DeleteChatUseCase implements DeleteChatUseCaseInterface {
 
   async execute(idChat: string, idUsuario: string): Promise<void> {
     const files = await this.repository.getFilesForChatDeletion(idChat, idUsuario);
-    if(files === null) return;
+    if(files === null) {
+      throw CustomError.notFound("Chat no encontrado");
+    }
 
     const deletionResults = await Promise.allSettled(
       files.flatMap((file) => [

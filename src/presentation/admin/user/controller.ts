@@ -75,7 +75,10 @@ export class AdminUserController {
 
     this.adminAuthRepository.deleteUser(idUsuario)
       .then((result: string | null) => {
-        if(result) return next(CustomError.badRequest(result));
+        if(result) {
+          if(result === "ID not found") return next(CustomError.notFound(result));
+          return next(CustomError.badRequest(result));
+        }
         return res.json({status: "success"});
       })
       .catch(next);
@@ -88,7 +91,10 @@ export class AdminUserController {
 
     this.adminAuthRepository.restoreUser(idUsuario)
       .then((result: string | null) => {
-        if(result) return next(CustomError.badRequest(result));
+        if(result) {
+          if(result === "ID not found") return next(CustomError.notFound(result));
+          return next(CustomError.badRequest(result));
+        }
         return res.json({status: "success"});
       })
       .catch(next);
