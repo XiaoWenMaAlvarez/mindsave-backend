@@ -48,7 +48,11 @@ export class ChatIAController {
     const error = UuidDto.verify(idChat);
     if(error !== null) return next(CustomError.badRequest(error)); 
     
-    const deleteChatUseCase = new DeleteChatUseCase(this.chatIARepository);
+    const deleteChatUseCase = new DeleteChatUseCase(
+      this.chatIARepository,
+      this.filesRepositoryService,
+      this.geminiService,
+    );
     deleteChatUseCase.execute(idChat!.toString(), req.user!.id)
       .then(() => res.json({result: "success"}))
       .catch(next);
@@ -71,8 +75,8 @@ export class ChatIAController {
 
       const sendMessageToChatUseCase = new SendMessageToChatUseCase(this.chatIARepository, this.filesRepositoryService, this.geminiService);
 
-      const userMessage = await sendMessageToChatUseCase.createUserMessage(promptChatDTO!);
-      const stream = await sendMessageToChatUseCase.streamResponse(promptChatDTO!.chatId, promptChatDTO!.idUsuario, userMessage);
+      const { userMessage, history } = await sendMessageToChatUseCase.prepareAuthorizedUserMessage(promptChatDTO!);
+      const stream = await sendMessageToChatUseCase.streamResponse(userMessage, history);
 
       res.setHeader('Content-Type', 'text/plain');
       res.status(200);

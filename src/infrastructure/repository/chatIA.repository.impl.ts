@@ -1,4 +1,4 @@
-import type { ChatChatIA, MensajeChatIA } from '../../domain/init.js';
+import type { ArchivoChatIA, ChatChatIA, MensajeChatIA } from '../../domain/init.js';
 import type { ChatIARepository } from '../../domain/repository/init.js';
 import { ChatIADatasource } from '../../domain/datasources/init.js';
 
@@ -19,6 +19,9 @@ export class ChatIARepositoryImpl implements ChatIARepository {
   }
   sendMessagesToChat(idChat: string, idUsuario: string, mensajes: readonly MensajeChatIA[]): Promise<void> {
     return this.chatIADatasource.sendMessagesToChat(idChat, idUsuario, mensajes);
+  }
+  getFilesForChatDeletion(idChat: string, idUsuario: string): Promise<ArchivoChatIA[] | null> {
+    return this.chatIADatasource.getFilesForChatDeletion(idChat, idUsuario);
   }
   deleteChat(idChat: string, idUsuario: string): Promise<void> {
     return this.chatIADatasource.deleteChat(idChat, idUsuario);

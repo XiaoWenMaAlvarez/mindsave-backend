@@ -1,5 +1,5 @@
 import { ChatIADatasource } from '../../domain/datasources/init.js';
-import { ChatChatIA, CustomError, MensajeChatIA } from '../../domain/init.js';
+import { ArchivoChatIA, ChatChatIA, CustomError, MensajeChatIA } from '../../domain/init.js';
 import { prisma } from "../../data/index.js";
 import { TipoChatRol } from '../../generated/prisma/enums.js';
 import { ChatIaMapper } from '../mappers/init.js';
@@ -130,7 +130,10 @@ export class ChatIADatasourceImpl implements ChatIADatasource {
                 create: mensaje.archivos.map(archivo => ({
                   fileUri: archivo.fileUri,
                   mimeType: archivo.mimeType,
-                  fileUrl: archivo.fileUrl
+                  fileUrl: archivo.fileUrl,
+                  cloudinaryPublicId: archivo.cloudinaryPublicId || null,
+                  cloudinaryResourceType: archivo.cloudinaryResourceType || null,
+                  geminiFileName: archivo.geminiFileName || null,
                 }))
               } : {}
             }))
@@ -138,6 +141,28 @@ export class ChatIADatasourceImpl implements ChatIADatasource {
         }
       });
     });
+  }
+
+  async getFilesForChatDeletion(idChat: string, idUsuario: string): Promise<ArchivoChatIA[] | null> {
+    const user = await this.getUserById(idUsuario);
+    const chat = await prisma.chat.findFirst({
+      where: {
+        id: idChat,
+        idUsuario: user.id,
+      },
+      select: {
+        mensajes: {
+          select: {
+            archivos: true,
+          },
+        },
+      },
+    });
+
+    if(chat == null) return null;
+    return chat.mensajes.flatMap((mensaje) =>
+      mensaje.archivos.map((archivo) => ArchivoChatIA.fromJson(archivo))
+    );
   }
 
   async deleteChat(idChat: string, idUsuario: string): Promise<void> {

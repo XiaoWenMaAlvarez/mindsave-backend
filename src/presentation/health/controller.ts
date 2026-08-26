@@ -1,21 +1,39 @@
 import { type Request, type Response } from 'express';
 import { prisma } from '../../data/index.js';
-import { envs, EmailService, FilesRepositoryService, GeminiService, Logger } from '../../config/init.js';
+import { EmailService, FilesRepositoryService, GeminiService, Logger, withTimeout } from '../../config/init.js';
 
 export class HealthController {
+  public static readonly HEALTH_CHECK_TIMEOUT_MS = 5_000;
 
   constructor(
     private readonly geminiService: GeminiService,
     private readonly filesService: FilesRepositoryService,
-    private readonly emailService: EmailService
+    private readonly emailService: EmailService,
+    private readonly timeoutMs: number = HealthController.HEALTH_CHECK_TIMEOUT_MS
   ) {}
 
   public check = async (req: Request, res: Response): Promise<void> => {
     const [dbResult, geminiResult, cloudinaryResult, mailerResult] = await Promise.allSettled([
-      prisma.$queryRaw`SELECT 1`,
-      this.geminiService.checkHealth(),
-      this.filesService.checkHealth(),
-      this.emailService.checkHealth(),
+      withTimeout(
+        prisma.$queryRaw`SELECT 1`,
+        this.timeoutMs,
+        "Database health probe"
+      ),
+      withTimeout(
+        this.geminiService.checkHealth(),
+        this.timeoutMs,
+        "Gemini health probe"
+      ),
+      withTimeout(
+        this.filesService.checkHealth(),
+        this.timeoutMs,
+        "Cloudinary health probe"
+      ),
+      withTimeout(
+        this.emailService.checkHealth(),
+        this.timeoutMs,
+        "Mailer health probe"
+      ),
     ]);
 
     const isDbConnected = dbResult.status === 'fulfilled';
@@ -38,7 +56,7 @@ export class HealthController {
     const isDegraded = isDbConnected && !isHealthy;
 
     const status = isHealthy ? "ok" : isDegraded ? "degraded" : "error";
-    const statusCode = isDbConnected ? (isHealthy ? 200 : 200) : 503;
+    const statusCode = isDbConnected ? 200 : 503;
 
     const responsePayload = {
       status,

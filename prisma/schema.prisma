@@ -406,9 +406,12 @@ model Mensaje {
 model Archivo {
   id       String     @id @default(uuid())
 
-  fileUri   String
-  mimeType   String
-  fileUrl   String
+  fileUri                 String
+  mimeType                String
+  fileUrl                 String
+  cloudinaryPublicId      String?
+  cloudinaryResourceType  String?
+  geminiFileName          String?
 
   mensajeId String
   mensaje  Mensaje   @relation(fields: [mensajeId], references: [id], onDelete: Cascade)

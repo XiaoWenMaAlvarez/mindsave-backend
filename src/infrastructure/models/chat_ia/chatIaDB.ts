@@ -5,6 +5,9 @@ export interface ArchivoIaDB {
   fileUri: string;
   mimeType: string;
   fileUrl: string;
+  cloudinaryPublicId: string | null;
+  cloudinaryResourceType: string | null;
+  geminiFileName: string | null;
   mensajeId: string;
 }
 

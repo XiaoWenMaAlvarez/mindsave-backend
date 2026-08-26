@@ -9,6 +9,9 @@ import cors from 'cors';
 interface Options {
   port: number;
   routes: Router;
+  requestTimeoutMs?: number;
+  headersTimeoutMs?: number;
+  keepAliveTimeoutMs?: number;
 }
 
 
@@ -17,12 +20,24 @@ export class Server {
   public readonly app = express();
   private readonly port: number;
   private readonly routes: Router;
+  private readonly requestTimeoutMs: number;
+  private readonly headersTimeoutMs: number;
+  private readonly keepAliveTimeoutMs: number;
   private serverListener?: HttpServer | undefined;
 
   constructor(options: Options) {
-    const { port, routes } = options;
+    const {
+      port,
+      routes,
+      requestTimeoutMs = 60_000,
+      headersTimeoutMs = 65_000,
+      keepAliveTimeoutMs = 60_000,
+    } = options;
     this.port = port;
     this.routes = routes;
+    this.requestTimeoutMs = requestTimeoutMs;
+    this.headersTimeoutMs = headersTimeoutMs;
+    this.keepAliveTimeoutMs = keepAliveTimeoutMs;
   }
 
   async start() {
@@ -44,6 +59,10 @@ export class Server {
     this.serverListener = this.app.listen(this.port, () => {
       console.log(`Server running on port ${ this.port }`);
     });
+
+    this.serverListener.requestTimeout = this.requestTimeoutMs;
+    this.serverListener.headersTimeout = this.headersTimeoutMs;
+    this.serverListener.keepAliveTimeout = this.keepAliveTimeoutMs;
 
     this.setupGracefulShutdown();
   }

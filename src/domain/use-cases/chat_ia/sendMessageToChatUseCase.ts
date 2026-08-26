@@ -3,6 +3,16 @@ import type { PromptChatDTO } from "../../../presentation/validators/ini.js";
 import { ArchivoChatIA, ChatChatIA, ChatIARepository, MensajeChatIA } from "../../init.js";
 import type { Content, GenerateContentResponse } from "@google/genai";
 
+interface AuthorizedUserMessage {
+  userMessage: MensajeChatIA;
+  history: Content[];
+}
+
+interface CloudinaryUploadReference {
+  public_id: string;
+  resource_type: string;
+  secure_url: string;
+}
 
 export class SendMessageToChatUseCase {
   public static readonly DEFAULT_MAX_HISTORY_MESSAGES = 20;
@@ -14,14 +24,20 @@ export class SendMessageToChatUseCase {
     private readonly maxHistoryMessages: number = SendMessageToChatUseCase.DEFAULT_MAX_HISTORY_MESSAGES
   ){}
 
-  async createUserMessage(promptChatDTO: PromptChatDTO): Promise<MensajeChatIA> {
+  async prepareAuthorizedUserMessage(promptChatDTO: PromptChatDTO): Promise<AuthorizedUserMessage> {
+    const history = await this.getChatHistory(promptChatDTO.chatId, promptChatDTO.idUsuario);
+    const userMessage = await this.createUserMessage(promptChatDTO);
+
+    return { userMessage, history };
+  }
+
+  private async createUserMessage(promptChatDTO: PromptChatDTO): Promise<MensajeChatIA> {
     const prompt = promptChatDTO.prompt;
     const files = promptChatDTO.files;
 
     const imagesPublic = await this.filesRepositoryService.uploadImages(files);
     
-    const imagesPublicUrl: string[] = imagesPublic.map((image) => image.secure_url);
-    const imagesFileData = await this.uploadImagesToGemini(files, imagesPublicUrl);
+    const imagesFileData = await this.uploadImagesToGemini(files, imagesPublic);
 
     
     
@@ -48,8 +64,7 @@ export class SendMessageToChatUseCase {
   }
 
 
-  async streamResponse(idChat: string, idUsuario: string, mensajeChatIA: MensajeChatIA,): Promise<AsyncGenerator<GenerateContentResponse, any, any>> {
-    const history = await this.getChatHistory(idChat, idUsuario);
+  async streamResponse(mensajeChatIA: MensajeChatIA, history: Content[]): Promise<AsyncGenerator<GenerateContentResponse, any, any>> {
     return this.geminiService.chatPromptUseCase(mensajeChatIA.text, mensajeChatIA.archivos, history)
   }
 
@@ -82,16 +97,20 @@ export class SendMessageToChatUseCase {
     return results.reverse();
   }
 
-  private async uploadImagesToGemini(files: Express.Multer.File[], publicUrls: string[]) {
+  private async uploadImagesToGemini(files: Express.Multer.File[], cloudinaryFiles: readonly CloudinaryUploadReference[]) {
     if(files.length === 0) return [];
     const uploadedFiles = await this.geminiService.uploadFiles(files);
     const result: ArchivoChatIA[] = [];
 
     uploadedFiles.forEach((file, index) => {
+      const cloudinaryFile = cloudinaryFiles[index];
       const newFile = new ArchivoChatIA({
         fileUri: file.uri ?? "",
         mimeType: file.mimeType ?? "",
-        fileUrl: publicUrls[index]  
+        fileUrl: cloudinaryFile?.secure_url,
+        cloudinaryPublicId: cloudinaryFile?.public_id,
+        cloudinaryResourceType: cloudinaryFile?.resource_type,
+        geminiFileName: file.name,
       })
       result.push(newFile);
     });

@@ -663,7 +663,7 @@ export const swaggerDocument: JsonObject = {
               }
             }
           },
-          "400": { description: "Límite excedido o archivo no permitido" }
+          "400": { description: "Chat inexistente o ajeno, payload inválido, límite excedido o archivo no permitido" }
         }
       }
     }

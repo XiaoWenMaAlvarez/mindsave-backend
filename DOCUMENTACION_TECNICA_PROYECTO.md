@@ -972,11 +972,11 @@ Multer devuelve 400 para MIME no permitido, tamaño superior a 5 MiB, más de ci
 
 1. `HandleFileMiddleware` guarda y valida temporales.
 2. `PromptChatDTO` valida prompt, UUID de chat, UUID de usuario y estructura Multer.
-3. `SendMessageToChatUseCase.createUserMessage` sube los adjuntos a Cloudinary.
-4. Después sube los mismos temporales a Gemini Files.
-5. Combina por índice `secure_url` de Cloudinary con `uri` y `mimeType` de Gemini para crear `ArchivoChatIA[]`.
-6. Recupera hasta los últimos 20 mensajes del chat propio, que Prisma entrega en orden descendente.
-7. Los invierte a orden cronológico y los transforma al formato `Content[]` de Gemini.
+3. `SendMessageToChatUseCase.prepareAuthorizedUserMessage` recupera hasta los últimos 20 mensajes mediante `chat.id + chat.idUsuario`; esta consulta valida la pertenencia antes de contactar proveedores externos.
+4. Invierte el historial a orden cronológico y lo transforma al formato `Content[]` de Gemini.
+5. Sólo después de autorizar el chat, sube los adjuntos a Cloudinary.
+6. Después sube los mismos temporales a Gemini Files.
+7. Combina por índice `secure_url` de Cloudinary con `uri` y `mimeType` de Gemini para crear `ArchivoChatIA[]`.
 8. Crea un chat Gemini con la instrucción de sistema y envía el prompt actual más sus `fileData`.
 9. Itera el `AsyncGenerator`; por cada fragmento concatena `chunk.text` y lo escribe inmediatamente al response.
 10. Crea la entidad del mensaje `model` con el texto completo.
@@ -991,7 +991,7 @@ Multer devuelve 400 para MIME no permitido, tamaño superior a 5 MiB, más de ci
 - La creación conjunta es atómica: si falla cualquiera de los mensajes, sus archivos anidados o una validación previa, Prisma revierte el turno completo y no queda un mensaje aislado.
 - Si el stream falla antes de terminar, normalmente no se guarda ninguno de los dos mensajes.
 - Cloudinary y Gemini capturan sus errores de upload y devuelven arrays vacíos. Esto puede degradar silenciosamente los adjuntos o dejar copias remotas sin metadatos persistidos.
-- La comprobación de que el chat pertenece al usuario ocurre al recuperar historial, después de los uploads externos. Un UUID válido de chat ajeno puede provocar uploads antes de ser rechazado con `Chat not found`.
+- Un chat inexistente o ajeno se rechaza con `Chat not found` antes de invocar Cloudinary, Gemini Files o la generación. Multer ya pudo crear temporales locales, que se eliminan en `finally`.
 - La limpieza `finally` elimina temporales tanto en éxito como en validación o fallo del proveedor; los errores Multer también tienen su propia limpieza.
 
 ### 12.6 Instrucción de sistema de Gemini
@@ -1359,10 +1359,9 @@ Estos puntos no cambian la descripción funcional anterior; indican dónde el co
 ### 17.3 Integraciones y archivos
 
 1. `EmailService.sendEmail` llama `transporter.sendMail()` sin `await`; retorna `true` antes de conocer el resultado asíncrono y su `catch` no captura rechazos posteriores.
-2. Validar pertenencia del chat ocurre después de subir adjuntos a proveedores externos.
-3. Eliminar un chat no elimina archivos remotos; fallos de upload también pueden dejar objetos huérfanos.
-4. Cloudinary/Gemini convierten fallos de upload en arrays vacíos, con degradación silenciosa.
-5. No hay timeout o circuit breaker propio para health, email, uploads ni generación.
+2. Eliminar un chat no elimina archivos remotos; fallos de upload también pueden dejar objetos huérfanos.
+3. Cloudinary/Gemini convierten fallos de upload en arrays vacíos, con degradación silenciosa.
+4. No hay timeout o circuit breaker propio para health, email, uploads ni generación.
 
 ### 17.4 Arquitectura y mantenibilidad
 
@@ -1374,13 +1373,13 @@ Estos puntos no cambian la descripción funcional anterior; indican dónde el co
 
 ## 18. Pruebas y verificabilidad existente
 
-La configuración Jest ejecuta TypeScript ESM, limpia mocks y recolecta cobertura V8 en todas las corridas. Hay 5 archivos y 15 casos de prueba según la ejecución de esta revisión.
+La configuración Jest ejecuta TypeScript ESM, limpia mocks y recolecta cobertura V8 en todas las corridas. Hay 5 archivos y 16 casos de prueba según la ejecución de esta revisión.
 
 Cobertura funcional observable en pruebas:
 
 - reemplazo transaccional de test breve y registro cognitivo, incluido el caso inexistente que no debe crear;
 - respuestas `404` y documentación OpenAPI de ambos `PUT` estrictos;
-- persistencia del turno de chat antes de finalizar el stream y propagación del fallo;
+- autorización del chat antes de uploads externos, persistencia del turno antes de finalizar el stream y propagación del fallo;
 - escritura atómica de los mensajes de usuario y modelo;
 - schema y migración de unicidad, normalización de `fechaDia` y manejo de colisiones `P2002` para test y chat;
 - una prueba básica de funcionamiento de Jest.
@@ -1400,7 +1399,7 @@ Resultado observado durante esta revisión:
 - `npx prisma validate`: exitoso;
 - `npx prisma generate`: exitoso con Prisma Client 7.9.1;
 - `npm run build`: exitoso;
-- `npm test -- --runInBand`: 5 suites y 15 tests exitosos.
+- `npm test -- --runInBand`: 5 suites y 16 tests exitosos.
 
 Comandos definidos por el proyecto:
 

@@ -4,6 +4,7 @@ import { Logger, type FilesRepositoryService, type GeminiService } from "../src/
 import {
   ChatChatIA,
   type ChatIARepository,
+  CustomError,
   type MensajeChatIA,
 } from "../src/domain/init.js";
 import { ChatIAController } from "../src/presentation/chat_ia/controller.js";
@@ -141,5 +142,52 @@ describe("Persistencia del stream de chat", () => {
     expect(response.end).not.toHaveBeenCalled();
     expect(response.destroy).toHaveBeenCalledTimes(1);
     expect(next).toHaveBeenCalledWith(persistenceError);
+  });
+
+  test("rechaza un chat ajeno antes de subir archivos a Cloudinary o Gemini", async () => {
+    const accessError = CustomError.badRequest("Chat not found");
+    const getMessagesFromChat = jest.fn(async () => {
+      throw accessError;
+    });
+    const repository = {
+      getMessagesFromChat,
+      sendMessagesToChat: jest.fn(),
+    } as unknown as ChatIARepository;
+    const uploadImages = jest.fn(async () => []);
+    const uploadFiles = jest.fn(async () => []);
+    const chatPromptUseCase = jest.fn(async () => responseStream());
+    const controller = new ChatIAController(
+      repository,
+      { uploadImages } as unknown as FilesRepositoryService,
+      { uploadFiles, chatPromptUseCase } as unknown as GeminiService,
+    );
+    const request = createRequest();
+    request.files = [{
+      fieldname: "files",
+      originalname: "privado.png",
+      encoding: "7bit",
+      mimetype: "image/png",
+      size: 128,
+      destination: "uploads",
+      filename: "temporal-inexistente",
+      path: "uploads/temporal-inexistente",
+    } as Express.Multer.File];
+    const response = createResponse([]);
+    const next = jest.fn();
+
+    await controller.sendMessageToChat(
+      request,
+      response as unknown as Response,
+      next as unknown as NextFunction,
+    );
+
+    expect(getMessagesFromChat).toHaveBeenCalledWith(chatId, userId, 20);
+    expect(uploadImages).not.toHaveBeenCalled();
+    expect(uploadFiles).not.toHaveBeenCalled();
+    expect(chatPromptUseCase).not.toHaveBeenCalled();
+    expect(response.setHeader).not.toHaveBeenCalled();
+    expect(response.write).not.toHaveBeenCalled();
+    expect(response.end).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledWith(accessError);
   });
 });

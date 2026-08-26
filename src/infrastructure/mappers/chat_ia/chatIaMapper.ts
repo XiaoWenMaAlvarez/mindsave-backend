@@ -19,6 +19,9 @@ export class ChatIaMapper {
       fileUri: registro.fileUri,
       mimeType: registro.mimeType,
       fileUrl: registro.fileUrl,
+      cloudinaryPublicId: registro.cloudinaryPublicId,
+      cloudinaryResourceType: registro.cloudinaryResourceType,
+      geminiFileName: registro.geminiFileName,
     };
     return new ArchivoChatIA(options);
   }
