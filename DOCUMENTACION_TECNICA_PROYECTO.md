@@ -93,7 +93,7 @@ Todas se validan al importar la configuración, por lo que la aplicación no arr
 
 - aplicación: `PORT`, `NODE_ENV`, `WEBSERVICE_URL`;
 - PostgreSQL: `POSTGRES_URL`, `POSTGRES_USER`, `POSTGRES_DB`, `POSTGRES_PASSWORD`;
-- autenticación: `JWT_SEED`;
+- autenticación: `JWT_SEED`, `JWT_EMAIL_VERIFICATION_SEED`, `JWT_PASSWORD_RESET_SEED`;
 - correo: `MAILER_SERVICE`, `MAILER_EMAIL`, `MAILER_SECRET_KEY`;
 - Gemini: `GEMINI_API_KEY`;
 - Cloudinary: `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_CLOUD_NAME`.
@@ -170,11 +170,14 @@ El token de sesión se firma con `JWT_SEED`, dura 2 horas por defecto y contiene
   "id": "uuid",
   "email": "persona@example.com",
   "name": "Nombre",
-  "role": "USER_ROL | PROFESIONAL_ROL"
+  "role": "USER_ROL | PROFESIONAL_ROL",
+  "purpose": "session"
 }
 ```
 
-`AuthMiddleware` valida la firma/expiración, la presencia de `email` y la coincidencia exacta del rol. Después inyecta el payload en `req.user` y `res.locals.user`. La identidad enviada en body, query o params no se utiliza como propietario: los controladores sustituyen o complementan esos datos con `req.user.id`.
+`AuthMiddleware` valida firma, expiración, emisor, audiencia, algoritmo HS256 y `purpose=session`. Después consulta el usuario por `id` en PostgreSQL, exige que siga activo y que su rol actual coincida con el endpoint. `req.user` y `res.locals.user` se construyen con los datos actuales de la base, no con email, nombre o rol posiblemente obsoletos del token. La identidad enviada en body, query o params no se utiliza como propietario: los controladores sustituyen o complementan esos datos con `req.user.id`.
+
+Los tokens de validación de email y recuperación usan secretos distintos, audiencias distintas y los propósitos `email-verification` y `password-reset`. Las tres variables de secreto deben tener valores diferentes o la aplicación no arranca.
 
 Respuestas del middleware:
 
@@ -183,11 +186,9 @@ Respuestas del middleware:
 | Sin `Authorization` | `401 {"error":"No token provided"}` |
 | No comienza con `Bearer ` | `401 {"error":"Invalid Bearer token"}` |
 | JWT inválido/expirado | `401 {"error":"Invalid token"}` |
-| Sin email | `401 {"error":"Invalid Bearer token - user"}` |
+| Sin id, cuenta inexistente o cuenta inactiva | `401 {"error":"Invalid Bearer token - user"}` |
 | Rol incorrecto | `401 {"error":"Invalid Bearer token - role"}` |
 | Excepción inesperada en middleware | `500 {"error":"Internal Server Error"}` |
-
-El middleware no vuelve a consultar el usuario en PostgreSQL y no comprueba `isActive` en cada petición.
 
 ### 6.3 Errores centralizados
 
@@ -289,7 +290,7 @@ Flujo principal:
 3. `RegisterUser` cifra la contraseña con bcrypt.
 4. El datasource comprueba que el email no exista y busca `Role.description=USER_ROL`.
 5. Crea `User` con email no verificado.
-6. Genera un JWT de validación `{email}` con duración de 24 horas.
+6. Genera un JWT de validación `{email, purpose:"email-verification"}` con duración de 24 horas y el secreto exclusivo de validación.
 7. Construye `${WEBSERVICE_URL}/api/auth/validate-email/<token>` y envía un email HTML. Email, nombre y enlace se escapan antes de interpolarlos.
 8. Vacía la contraseña de la entidad de respuesta.
 
@@ -324,7 +325,7 @@ La fila del usuario se crea antes de enviar el correo; si el envío falla, la cu
 **Clases:** `AuthController.validateEmail -> ValidateEmail -> JwtAdapter -> UserRepositoryImpl -> UserDatasourceImpl`.
 
 1. Se verifica que el parámetro sea string.
-2. Se valida firma y expiración del JWT y se extrae `email`.
+2. Se validan firma, expiración, algoritmo, emisor, audiencia y `purpose=email-verification`; después se extrae `email`.
 3. Prisma actualiza `User.emailVerified=true` buscando por email.
 4. En éxito se devuelve una página HTML «Email validado con éxito».
 5. Cualquier error —token inválido, expirado, email inexistente o fallo de base de datos— es capturado por el controlador y produce una página HTML «No pudimos validar tu email».
@@ -363,9 +364,9 @@ Orden de verificaciones:
 
 **Endpoint:** `GET /api/auth/check-status`
 
-**Actor:** JWT `USER_ROL` válido.
+**Actor:** JWT de sesión `USER_ROL` válido cuya cuenta continúa activa.
 
-No consulta PostgreSQL. Toma `id`, `email`, `name` y `role` del token aceptado por el middleware, genera otro JWT de 2 horas y devuelve la misma forma que el login. En la práctica renueva la ventana de sesión mientras el token presentado siga siendo válido.
+El middleware consulta PostgreSQL por el `id` del token y rechaza cuentas eliminadas, desactivadas o cuyo rol actual no sea `USER_ROL`. Con la identidad actual recuperada genera otro JWT de sesión de 2 horas y devuelve la misma forma que el login.
 
 ### 8.6 AUTH-05 — Solicitar recuperación de contraseña
 
@@ -380,7 +381,7 @@ Flujo diseñado e implementado:
 1. Se valida que `email` sea string y tenga formato de email.
 2. Se intenta comprobar si el usuario existe.
 3. Si no existe, se termina sin revelar esa condición.
-4. Si existe, se genera JWT `{email}` de 15 minutos.
+4. Si existe, se genera JWT `{email, purpose:"password-reset"}` de 15 minutos con su secreto exclusivo.
 5. El JWT completo y su expiración se guardan en `resetToken` y `resetTokenExpiration`.
 6. Se envía un enlace `${WEBSERVICE_URL}/api/auth/reset-password/<token>`.
 7. Se responde siempre `200 {"message":"OK"}` para un email sintácticamente válido, exista o no.
@@ -393,7 +394,7 @@ Flujo diseñado e implementado:
 
 El token debe cumplir dos condiciones:
 
-- JWT válido y no expirado;
+- JWT válido, no expirado y con `purpose=password-reset`;
 - coincidencia exacta con `User.resetToken` y `resetTokenExpiration > ahora`.
 
 Si ambas se cumplen, devuelve una página HTML con formulario `POST` a la misma ruta. El token se codifica con `encodeURIComponent` antes de insertarlo en el atributo `action`. En otro caso devuelve una página HTML de token inválido o vencido. Los dos resultados usan status 200.
@@ -406,7 +407,7 @@ Si ambas se cumplen, devuelve una página HTML con formulario `POST` a la misma 
 
 **Body:** `{ "password": "nueva contraseña" }`.
 
-1. Valida el JWT y extrae email.
+1. Valida el JWT de propósito `password-reset` y extrae email.
 2. Cifra `password` con bcrypt.
 3. Busca usuario por email, token exacto y expiración futura.
 4. Actualiza el hash y deja `resetToken` y `resetTokenExpiration` en `null`.
@@ -448,7 +449,7 @@ A diferencia del login de usuario final, este datasource no comprueba `isActive`
 
 **Acceso:** JWT `PROFESIONAL_ROL`.
 
-Replica el comportamiento de `AUTH-04`: no consulta la base, genera un token nuevo desde el payload y responde `200` con identidad, rol y token.
+Replica el comportamiento de `AUTH-04`: revalida en la base que la cuenta siga activa y conserve el rol `PROFESIONAL_ROL`, genera un token nuevo con la identidad actual y responde `200` con identidad, rol y token.
 
 ### 9.4 Contrato de usuario administrado
 
@@ -1150,7 +1151,7 @@ La API administrativa nunca borra físicamente `User`: sólo cambia `isActive`, 
 | CU-01 Registrar cuenta de usuario | Visitante | Email no registrado; rol semilla existente. | Usuario activo, no verificado, con password cifrada; correo de validación solicitado. |
 | CU-02 Validar email | Titular del enlace | JWT de validación vigente; email existente. | `emailVerified=true`. |
 | CU-03 Iniciar sesión de usuario | Usuario | Cuenta existente, activa, verificada, password correcta, rol usuario. | JWT de 2 horas emitido. |
-| CU-04 Renovar sesión de usuario | Usuario | JWT `USER_ROL` vigente. | Nuevo JWT emitido sin consulta de cuenta. |
+| CU-04 Renovar sesión de usuario | Usuario | JWT de sesión `USER_ROL` vigente y cuenta activa. | Nuevo JWT emitido con identidad revalidada. |
 | CU-05 Solicitar recuperación | Visitante | Email sintácticamente válido. | Si la cuenta existe: token persistido y correo solicitado; respuesta no revela existencia. |
 | CU-06 Restablecer contraseña | Titular del enlace | JWT y token almacenado vigentes. | Nuevo hash persistido; token consumido/anulado. |
 | CU-07 Registrar profesional | Visitante en el sistema actual | Email no registrado; rol profesional semilla. | Profesional verificado y activo creado. |
@@ -1256,7 +1257,7 @@ Para un diagrama de clases de dominio, conviene omitir routers y Prisma y usar l
 | Clase/contrato | Operaciones principales |
 |---|---|
 | `UserEntity` | `fromJson(object)`, `toJson()` |
-| `UserRepository` / `UserDatasource` | `register`, `login`, `validateEmail`, `verifyUserByEmail`, `verifyUserByEmailAndToken`, `createResetPasswordToken`, `resetPassword` |
+| `UserRepository` / `UserDatasource` | `register`, `login`, `findActiveUserById`, `validateEmail`, `verifyUserByEmail`, `verifyUserByEmailAndToken`, `createResetPasswordToken`, `resetPassword` |
 | `AdminAuthRepository` / datasource | `register`, `login` |
 | `AdminUserRepository` / datasource | `createUser`, `getUsers`, `getUserById`, `updateUser`, `deleteUser`, `restoreUser` |
 | `RegisterUser` | `execute(user)`; internamente envía validación. |
@@ -1344,10 +1345,8 @@ Estos puntos no cambian la descripción funcional anterior; indican dónde el co
 1. `POST /admin/auth/register` permite crear profesionales sin autenticación.
 2. La solicitud de recuperación llama por error a `validateEmail`, activando la verificación del email existente.
 3. El login profesional no comprueba `isActive`.
-4. Los endpoints protegidos confían en el estado incluido en el JWT hasta su expiración; no revalidan existencia ni actividad en base.
-5. El cambio de contraseña no valida tipo ni longitud en servidor.
-6. Los campos de creación administrativa son opcionales en Zod, aunque Prisma/bcrypt necesitan varios de ellos.
-7. Tokens de validación y sesión comparten seed y no incluyen un claim de propósito; `validate-email` sólo exige que el token firmado contenga email.
+4. El cambio de contraseña no valida tipo ni longitud en servidor.
+5. Los campos de creación administrativa son opcionales en Zod, aunque Prisma/bcrypt necesitan varios de ellos.
 
 ### 17.2 Consistencia y semántica HTTP
 

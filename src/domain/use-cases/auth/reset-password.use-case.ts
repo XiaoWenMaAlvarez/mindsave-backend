@@ -20,7 +20,7 @@ export class ResetPasswordUseCase implements ResetPasswordUseCaseInterface {
     const userExists = await this.userRepository.verifyUserByEmail(email);
     if(userExists !== true ) return;
 
-    const token = JwtAdapter.generateToken({ email },`${tokenTimeAliveMinutes}m`);
+    const token = JwtAdapter.generateToken({ email }, "password-reset", `${tokenTimeAliveMinutes}m`);
     if(token == null) {
       Logger.error(`Error al generar un token con el email ${email}`);
       return;
@@ -33,8 +33,8 @@ export class ResetPasswordUseCase implements ResetPasswordUseCaseInterface {
 
 
   async validateResetPasswordToken(token: string): Promise<boolean> {
-    const payload = JwtAdapter.validateToken<{email: string}>(token);
-    if(payload == null) return false;
+    const payload = JwtAdapter.validateToken<{email: string}>(token, "password-reset");
+    if(payload == null || typeof payload.email !== "string" || payload.email.trim() === "") return false;
     const tokenValid = await this.userRepository.verifyUserByEmailAndToken(payload.email, token);
     if(tokenValid !== true ) return false;
     return true;
@@ -43,8 +43,8 @@ export class ResetPasswordUseCase implements ResetPasswordUseCaseInterface {
 
   
   async setNewPassword(token: string, password: string): Promise<boolean> {
-    const payload = JwtAdapter.validateToken<{email: string}>(token);
-    if(payload == null) return false;
+    const payload = JwtAdapter.validateToken<{email: string}>(token, "password-reset");
+    if(payload == null || typeof payload.email !== "string" || payload.email.trim() === "") return false;
     const newPassword = bcryptAdapter.hash(password);
     return await this.userRepository.resetPassword(payload.email, token, newPassword);
   }

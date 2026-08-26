@@ -12,6 +12,7 @@ export class AuthRouter {
 
     const userDatasource  = new UserDatasourceImpl();
     const userRepository = new UserRepositoryImpl(userDatasource);
+    const authMiddleware = new AuthMiddleware(userRepository);
 
     const verifyEmailUrl = `${envs.WEBSERVICE_URL}/api/auth/validate-email`;
 
@@ -28,7 +29,7 @@ export class AuthRouter {
     router.post("/reset-password/:token", authController.resetPasswordWithToken);
     
 
-    router.get("/check-status", [AuthMiddleware.validateJWTUser], authController.checkStatus);
+    router.get("/check-status", [authMiddleware.validateJWTUser], authController.checkStatus);
 
     return router;
   }

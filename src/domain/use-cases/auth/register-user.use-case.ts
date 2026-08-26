@@ -19,7 +19,7 @@ export class RegisterUser implements RegisterUserUseCase {
     const error = await this.userRepository.register(user);
     if (error) throw CustomError.badRequest(error.toString());
 
-    const token = JwtAdapter.generateToken({ email: user.email }, '24h' );
+    const token = JwtAdapter.generateToken({ email: user.email }, "email-verification", "24h");
     if (!token) throw CustomError.internalServerError('Error al generar token de verificación');
 
     const verifyEmailUrlWithToken = `${this.verifyEmailUrl}/${token}`;

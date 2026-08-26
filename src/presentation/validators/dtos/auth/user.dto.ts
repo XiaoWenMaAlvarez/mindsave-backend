@@ -1,4 +1,5 @@
-import { isValidEsquemaLoginUser } from "../../schemas/init.js";
+import { UserEntity } from "../../../../domain/entities/init.js";
+import { isValidEsquemaRegisterUser, isValidEsquemaLoginUser } from "../../schemas/init.js";
 
 export interface UserLogin {
   email: string;
@@ -7,6 +8,19 @@ export interface UserLogin {
 
 export class UserDTO {
   constructor(){}
+
+  static register(body: {[key: string]: any}): [string | null, UserEntity | null] {
+    const result = isValidEsquemaRegisterUser(body);
+    if(typeof result === "string") return [result, null];
+    return [null, UserEntity.fromJson({
+      email: body.email,
+      name: body.name,
+      password: body.password,
+      emailVerified: false,
+      id: "",
+      role: ""
+    })];
+  }
 
   static login(body: {[key: string]: any}): [string | null, UserLogin | null] {
     const result = isValidEsquemaLoginUser(body);
@@ -18,4 +32,3 @@ export class UserDTO {
     return [null, userLogin];
   }
 }
-

@@ -9,13 +9,17 @@ export class AdminAuthDatasourceImpl implements AdminAuthDatasource {
   async login(email: string, password: string): Promise<UserEntity | string> {
     const user = await prisma.user.findUnique({
       where: {
-        email: email
+        email: email,
+        isActive: true,
+        role: {
+          description: "PROFESIONAL_ROL"
+        }
         },
       include: {
         role: true
       }
     });
-    if(user == null) return "Email not found";
+    if(user == null) return "User not found";
 
     const isMatch = bcryptAdapter.compare(password, user.password);
     if(!isMatch) return "Invalid password";

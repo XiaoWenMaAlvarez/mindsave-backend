@@ -6,6 +6,29 @@ import { bcryptAdapter } from '../../config/bcrypt.adapter.js';
 
 export class UserDatasourceImpl implements UserDatasource {
 
+  async findActiveUserById(id: string): Promise<UserEntity | null> {
+    const user = await prisma.user.findUnique({
+      where: {
+        id,
+        isActive: true,
+      },
+      include: {
+        role: true,
+      },
+    });
+
+    if (user == null) return null;
+
+    return UserEntity.fromJson({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      password: "",
+      emailVerified: user.emailVerified,
+      role: user.role.description,
+    });
+  }
+
   async verifyUserByEmailAndToken(email: string, token: string): Promise<boolean | null> {
     try {
       const user = await prisma.user.findUnique({

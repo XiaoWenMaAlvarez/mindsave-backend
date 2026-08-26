@@ -11,8 +11,10 @@ export class ValidateEmail implements ValidateEmailUseCase {
   ) {}
 
   async execute(token: string): Promise<boolean> {
-    const payload = JwtAdapter.validateToken<{ email: string }>(token);
-    if (!payload) throw CustomError.badRequest('Token inválido');
+    const payload = JwtAdapter.validateToken<{ email: string }>(token, "email-verification");
+    if (!payload || typeof payload.email !== "string" || payload.email.trim() === "") {
+      throw CustomError.badRequest('Token inválido');
+    }
 
     const result = await this.userRepository.validateEmail(payload.email);
     if (!result) throw CustomError.internalServerError("Email no existe");

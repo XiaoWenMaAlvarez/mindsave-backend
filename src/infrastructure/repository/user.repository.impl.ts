@@ -8,6 +8,9 @@ export class UserRepositoryImpl implements UserRepository {
     private readonly userDatasource: UserDatasource
   ){}
 
+  findActiveUserById(id: string): Promise<UserEntity | null> {
+    return this.userDatasource.findActiveUserById(id);
+  }
   verifyUserByEmailAndToken(email: string, token: string): Promise<boolean | null> {
     return this.userDatasource.verifyUserByEmailAndToken(email, token);
   }
@@ -19,7 +22,7 @@ export class UserRepositoryImpl implements UserRepository {
     return this.userDatasource.createResetPasswordToken(email, token, tokenTimeAliveMinutes);
   }
   verifyUserByEmail(email: string): Promise<boolean | null> {
-    return this.userDatasource.validateEmail(email);
+    return this.userDatasource.verifyUserByEmail(email);
   }
   register(user: UserEntity): Promise<string | null> {
     return this.userDatasource.register(user);
