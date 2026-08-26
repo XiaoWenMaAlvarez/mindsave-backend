@@ -3,17 +3,20 @@ import { RegistroEstadoAnimo } from '../../domain/init.js';
 import { prisma } from "../../data/index.js";
 import type { RegistroEstadoAnimoDB } from '../models/init.js';
 import { RegistroEstadoAnimoMapper } from '../init.js';
+import type { Prisma } from '../../generated/prisma/client.js';
+
+type RegistroWriteClient = Pick<Prisma.TransactionClient, "registroEstadoAnimo">;
 
 export class RegistroEstadoAnimoDatasourceImpl implements RegistroEstadoAnimoDatasource {
 
-  async saveRegistroEstadoDeAnimo(registro: RegistroEstadoAnimo): Promise<string> {
-    const user = await prisma.user.findUnique({
-      where: {id: registro.idUsuario}
-    });
-    if(user == null) return "";
-
-    const nuevoRegistro = await prisma.registroEstadoAnimo.create({
+  private async createRegistroEstadoDeAnimo(
+    client: RegistroWriteClient,
+    registro: RegistroEstadoAnimo,
+    id?: string,
+  ): Promise<string> {
+    const nuevoRegistro = await client.registroEstadoAnimo.create({
       data: {
+        ...(id && { id }),
         user: {connect: {id: registro.idUsuario}},
         fecha: registro.fecha,
         sucesoTrastornador: registro.sucesoTrastornador,
@@ -50,6 +53,15 @@ export class RegistroEstadoAnimoDatasourceImpl implements RegistroEstadoAnimoDat
       },
     });
     return nuevoRegistro.id;
+  }
+
+  async saveRegistroEstadoDeAnimo(registro: RegistroEstadoAnimo): Promise<string> {
+    const user = await prisma.user.findUnique({
+      where: {id: registro.idUsuario}
+    });
+    if(user == null) return "";
+
+    return this.createRegistroEstadoDeAnimo(prisma, registro);
   }
 
   
@@ -137,53 +149,24 @@ export class RegistroEstadoAnimoDatasourceImpl implements RegistroEstadoAnimoDat
     return registrosEntity;
   }
 
-  async editarRegistroEstadoDeAnimo(registro: RegistroEstadoAnimo): Promise<void> {
-    await this.eliminarRegistroEstadoDeAnimo(registro.id!, registro.idUsuario);
+  async editarRegistroEstadoDeAnimo(registro: RegistroEstadoAnimo): Promise<boolean> {
+    return prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { id: registro.idUsuario }
+      });
+      if(user == null) return false;
 
-    const user = await prisma.user.findUnique({
-      where: {id: registro.idUsuario}
-    });
-    if(user == null) return;
-
-    await prisma.registroEstadoAnimo.create({
-      data: {
-        id: registro.id!,
-        user: {connect: {id: registro.idUsuario}},
-        fecha: registro.fecha,
-        sucesoTrastornador: registro.sucesoTrastornador,
-        grupoEmociones1: { create: registro.grupoEmociones1.toJson() },
-        grupoEmociones2: { create: registro.grupoEmociones2.toJson() },
-        grupoEmociones3: { create: registro.grupoEmociones3.toJson() },
-        grupoEmociones4: { create: registro.grupoEmociones4.toJson() },
-        grupoEmociones5: { create: registro.grupoEmociones5.toJson() },
-        grupoEmociones6: { create: registro.grupoEmociones6.toJson() },
-        grupoEmociones7: { create: registro.grupoEmociones7.toJson() },
-        grupoEmociones8: { create: registro.grupoEmociones8.toJson() },
-        grupoEmociones9: { create: registro.grupoEmociones9.toJson() },
-        ...(registro.grupoEmocionesPersonalizadas && {
-          grupoEmocionesPersonalizadas: {
-            create: {
-              porcentajeCreenciaAntes: registro.grupoEmocionesPersonalizadas.porcentajeCreenciaAntes,
-              porcentajeCreenciaDespues: registro.grupoEmocionesPersonalizadas.porcentajeCreenciaDespues,
-              listaEmociones: { create: registro.grupoEmocionesPersonalizadas.listaEmociones.map(e => ({ descripcion: e })) }
-            }
-          },
-        }),
-        pensamientos: {
-          create: registro.pensamientos.map((p) => ({
-            pensamientoNegativo: p.pensamientoNegativo,
-            porcentajeCreenciaAntes: p.porcentajeCreenciaAntes,
-            porcentajeCreenciaDespues: p.porcentajeCreenciaDespues,
-            pensamientoPositivo: p.pensamientoPositivo,
-            porcentajeCreenciaPositivo: p.porcentajeCreenciaPositivo,
-            distorsion: {
-              create: p.distorsion,
-            },
-          })),
+      const deleted = await tx.registroEstadoAnimo.deleteMany({
+        where: {
+          id: registro.id!,
+          idUsuario: registro.idUsuario,
         },
-      },
+      });
+      if(deleted.count === 0) return false;
+
+      await this.createRegistroEstadoDeAnimo(tx, registro, registro.id!);
+      return true;
     });
-    return;
   }
 
   async eliminarRegistroEstadoDeAnimo(idRegistro: string, userId: string): Promise<void> {

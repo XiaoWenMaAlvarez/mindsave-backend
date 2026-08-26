@@ -655,9 +655,9 @@ Usa exactamente el mismo body y validación que la creación. La fecha que contr
 La operación:
 
 1. elimina todos los tests propios dentro del día indicado;
-2. llama a la creación con los valores nuevos.
+2. recrea el test y sus cuatro componentes con los valores nuevos.
 
-No se ejecuta en una transacción única. Si la recreación falla después del delete, se pierde el test anterior. Si no había test, el PUT crea uno. Responde `200 {"status":"success"}`.
+Ambos pasos usan el mismo cliente de una transacción interactiva Prisma. Si falla la recreación o cualquiera de sus creaciones anidadas, Prisma revierte también el borrado y conserva el test anterior. La recreación sólo se ejecuta cuando `deleteMany` informa que eliminó al menos un test propio; si no existía uno para ese usuario y fecha, responde `404 {"error":"Test breve no encontrado"}` sin crear un registro nuevo. En una edición exitosa responde `200 {"status":"success"}`.
 
 ### 10.6 TB-05 — Eliminar test por fecha
 
@@ -846,11 +846,10 @@ El body debe cumplir todo el schema de creación y además `body.id` debe ser UU
 1. intenta eliminar el registro con coincidencia `id + idUsuario`;
 2. vuelve a crear el agregado completo usando el mismo UUID y los nuevos datos.
 
-La eliminación y recreación no forman una sola transacción. Consecuencias del comportamiento actual:
+La eliminación y recreación forman una sola transacción interactiva Prisma. Consecuencias del comportamiento actual:
 
-- si la recreación falla, el agregado anterior ya fue eliminado;
-- si el ID no existía, se crea un registro nuevo con ese ID;
-- si el ID pertenece a otra persona, no se elimina, y el intento de recrearlo normalmente falla por UUID duplicado y termina en 500;
+- si la recreación falla, Prisma revierte el borrado y conserva el agregado anterior;
+- si `deleteMany` no elimina un registro propio, la recreación no se ejecuta y responde `404 {"error":"Registro de estado de ánimo no encontrado"}`; esto cubre tanto un ID inexistente como uno perteneciente a otra persona sin revelar cuál de los dos casos ocurrió;
 - el cambio puede mover al registro entre pendiente y completo según el valor posterior del grupo 1.
 
 **Respuesta exitosa:** `200 {"status":"success"}`.
@@ -1140,7 +1139,7 @@ La API administrativa nunca borra físicamente `User`: sólo cambia `isActive`, 
 - Aplicadas sólo en aplicación: título de chat único por usuario y un test breve por usuario/día.
 - Toda lectura/escritura privada de test, registro o chat incorpora el propietario derivado del JWT.
 - Los endpoints de eliminación privada prefieren no revelar existencia: recurso inexistente o ajeno suele terminar como éxito sin efecto.
-- Las creaciones anidadas de Prisma son atómicas dentro de una sola operación; los reemplazos que hacen delete seguido de create no están envueltos en una transacción común.
+- Las creaciones anidadas de Prisma son atómicas dentro de una sola operación; los reemplazos de test breve y registro cognitivo envuelven delete y create en una transacción interactiva común.
 
 ## 15. Material de modelado para casos de uso y UML
 
@@ -1159,10 +1158,10 @@ La API administrativa nunca borra físicamente `User`: sólo cambia `isActive`, 
 | CU-09 Administrar usuarios | Profesional | JWT profesional. | Crear, listar, consultar, editar, desactivar o reactivar cuenta. |
 | CU-10 Registrar test breve | Usuario | JWT usuario; body válido. | Agregado del día creado o reemplazado. |
 | CU-11 Consultar test breve | Usuario | JWT usuario; año/fecha válida. | Historial anual o test propio devuelto. |
-| CU-12 Editar/eliminar test breve | Usuario | JWT usuario; body/fecha válida. | Test propio reemplazado o eliminado; ausencia no siempre es error. |
+| CU-12 Editar/eliminar test breve | Usuario | JWT usuario; body/fecha válida; para editar debe existir un test propio. | Test propio reemplazado atómicamente o eliminado; una edición inexistente responde 404. |
 | CU-13 Crear registro cognitivo | Usuario | JWT usuario; agregado completo válido. | Registro y componentes creados; UUID devuelto. |
 | CU-14 Consultar registros cognitivos | Usuario | JWT usuario; paginación/UUID válida. | Pendientes, completos o detalle propio devueltos. |
-| CU-15 Editar/eliminar registro cognitivo | Usuario | JWT usuario; body completo o ID. | Agregado reemplazado/eliminado, con semántica no transaccional para PUT. |
+| CU-15 Editar/eliminar registro cognitivo | Usuario | JWT usuario; body completo o ID; para editar debe existir un registro propio. | Agregado reemplazado o eliminado atómicamente; una edición inexistente responde 404. |
 | CU-16 Crear/listar chat | Usuario | JWT usuario; título válido. | Chat creado o lista propia con último mensaje devuelta. |
 | CU-17 Consultar historial | Usuario | JWT usuario; UUID de chat propio. | Historial descendente devuelto. |
 | CU-18 Conversar con IA | Usuario | JWT usuario; chat propio; prompt válido. | Stream entregado; en flujo completo, mensajes y archivos persistidos. |
@@ -1350,13 +1349,12 @@ Estos puntos no cambian la descripción funcional anterior; indican dónde el co
 
 ### 17.2 Consistencia y semántica HTTP
 
-1. PUT de test y registro usa delete+create sin transacción común.
-2. Unicidad diaria de test y título de chat se valida en aplicación, por lo que existe ventana de carrera.
-3. Varias eliminaciones responden éxito si el recurso no existe o es ajeno; GET de registro no encontrado responde 200 sin cuerpo útil.
-4. Las páginas de token inválido usan 200; el estado se expresa en HTML.
-5. La creación de usuario responde una entidad provisional sin UUID/rol reales.
-6. Fechas del body sólo se validan como string y las fronteras diarias dependen de la zona local del proceso.
-7. El estado pendiente/completo depende únicamente del porcentaje posterior del grupo 1.
+1. Unicidad diaria de test y título de chat se valida en aplicación, por lo que existe ventana de carrera.
+2. Varias eliminaciones responden éxito si el recurso no existe o es ajeno; GET de registro no encontrado responde 200 sin cuerpo útil.
+3. Las páginas de token inválido usan 200; el estado se expresa en HTML.
+4. La creación de usuario responde una entidad provisional sin UUID/rol reales.
+5. Fechas del body sólo se validan como string y las fronteras diarias dependen de la zona local del proceso.
+6. El estado pendiente/completo depende únicamente del porcentaje posterior del grupo 1.
 
 ### 17.3 Integraciones y archivos
 
@@ -1398,7 +1396,7 @@ Cobertura funcional observable en pruebas:
 - persistencia, pertenencia y límites de día del test breve;
 - agregado y clasificación del registro cognitivo;
 - CRUD de chat y orden del historial contra datasource;
-- transacciones/fallos parciales de reemplazos y persistencia del stream;
+- integración real de rollback de reemplazos y persistencia transaccional del stream;
 - coherencia entre todas las rutas Express y OpenAPI.
 
 Resultado observado durante esta revisión:

@@ -15,7 +15,7 @@ export class TestBreveEstadoDeAnimoRepositoryImpl implements TestBreveEstadoDeAn
   getTestBreveEstadoDeAnimoByYear(year: number, userId: string): Promise<TestBreveEstadoDeAnimo[]> {
     return this.testBreveEstadoDeAnimoDatasource.getTestBreveEstadoDeAnimoByYear(year, userId);
   }
-  editarTestBreveEstadoDeAnimoDeHoy(testBreve: TestBreveEstadoDeAnimo): Promise<void> {
+  editarTestBreveEstadoDeAnimoDeHoy(testBreve: TestBreveEstadoDeAnimo): Promise<boolean> {
     return this.testBreveEstadoDeAnimoDatasource.editarTestBreveEstadoDeAnimoDeHoy(testBreve);
   }
   eliminarTestBreveEstadoDeAnimoDeHoy(year: number, month: number, day: number, userId: string): Promise<void> {

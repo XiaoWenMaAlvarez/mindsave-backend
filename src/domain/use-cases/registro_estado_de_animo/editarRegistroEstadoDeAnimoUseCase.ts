@@ -1,4 +1,4 @@
-import type { RegistroEstadoAnimo, RegistroEstadoAnimoRepository } from "../../init.js";
+import { CustomError, type RegistroEstadoAnimo, type RegistroEstadoAnimoRepository } from "../../init.js";
 
 export interface EditarRegistroEstadoDeAnimoUseCaseInterface {
   execute(registroEstadoAnimo: RegistroEstadoAnimo): Promise<void>;
@@ -9,7 +9,8 @@ export class EditarRegistroEstadoDeAnimoUseCase implements EditarRegistroEstadoD
     private readonly repository: RegistroEstadoAnimoRepository
   ){}
 
-  execute(registroEstadoAnimo: RegistroEstadoAnimo) {
-    return this.repository.editarRegistroEstadoDeAnimo(registroEstadoAnimo);
+  async execute(registroEstadoAnimo: RegistroEstadoAnimo): Promise<void> {
+    const updated = await this.repository.editarRegistroEstadoDeAnimo(registroEstadoAnimo);
+    if(!updated) throw CustomError.notFound("Registro de estado de ánimo no encontrado");
   }
 }

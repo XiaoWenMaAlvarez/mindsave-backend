@@ -16,7 +16,7 @@ export class RegistroEstadoAnimoRepositoryImpl implements RegistroEstadoAnimoRep
   getRegistroEstadoDeAnimoPendientes(userId: string, page?: number, limit?: number): Promise<RegistroEstadoAnimo[]> {
     return this.registroEstadoAnimoDatasource.getRegistroEstadoDeAnimoPendientes(userId, page, limit);
   }
-  editarRegistroEstadoDeAnimo(registro: RegistroEstadoAnimo): Promise<void> {
+  editarRegistroEstadoDeAnimo(registro: RegistroEstadoAnimo): Promise<boolean> {
     return this.registroEstadoAnimoDatasource.editarRegistroEstadoDeAnimo(registro);
   }
   eliminarRegistroEstadoDeAnimo(idRegistro: string, userId: string): Promise<void> {

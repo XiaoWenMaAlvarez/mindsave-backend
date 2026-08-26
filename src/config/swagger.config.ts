@@ -439,7 +439,8 @@ export const swaggerDocument: JsonObject = {
           }
         },
         responses: {
-          "200": { description: "Test actualizado" }
+          "200": { description: "Test actualizado" },
+          "404": { description: "Test no encontrado o no pertenece al usuario autenticado" }
         }
       }
     },
@@ -514,7 +515,8 @@ export const swaggerDocument: JsonObject = {
           }
         },
         responses: {
-          "200": { description: "Registro modificado" }
+          "200": { description: "Registro modificado" },
+          "404": { description: "Registro no encontrado o no pertenece al usuario autenticado" }
         }
       }
     },
