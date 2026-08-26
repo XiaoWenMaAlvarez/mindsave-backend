@@ -586,7 +586,8 @@ export const swaggerDocument: JsonObject = {
           }
         },
         responses: {
-          "201": { description: "Chat creado", content: { "application/json": { schema: { type: "object", properties: { result: { type: "string", format: "uuid" } } } } } }
+          "201": { description: "Chat creado", content: { "application/json": { schema: { type: "object", properties: { result: { type: "string", format: "uuid" } } } } } },
+          "400": { description: "Título duplicado o usuario inexistente" }
         }
       }
     },

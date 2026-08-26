@@ -602,20 +602,21 @@ La entidad `TestBreveEstadoDeAnimo` transforma la fecha a `Date` y encapsula `De
 
 1. Se valida el body completo y se fuerza `idUsuario=req.user.id`.
 2. El datasource comprueba que la fila `User` exista.
-3. Calcula el intervalo local `[00:00 de fecha, 00:00 del día siguiente)` usando el huso horario del proceso Node.
-4. Busca un test del mismo usuario en ese intervalo.
+3. Deriva de `fecha` la clave de calendario `fechaDia`, almacenada como `DATE`.
+4. Busca por la clave compuesta `(idUsuario, fechaDia)`.
 5. Si ya existe, llama a la lógica de edición, que elimina y vuelve a crear.
 6. Si no existe, crea el test y sus cuatro relaciones uno-a-uno mediante escritura anidada Prisma.
+7. Si otra petición crea la misma clave entre la consulta y la escritura, Prisma devuelve `P2002` y el datasource reintenta mediante la lógica de reemplazo.
 
 **Respuesta:** `201 {"status":"success"}` tanto si creó como si reemplazó. Si el usuario físico no existe, el datasource retorna sin escribir y el controlador también responde éxito.
 
-La unicidad «un test por usuario y día» se aplica mediante consulta previa, no mediante un índice único de base de datos; dos peticiones concurrentes podrían crear duplicados.
+La base de datos garantiza «un test por usuario y día» mediante un índice único sobre `(idUsuario, fechaDia)`. La consulta previa sólo decide entre crear y reemplazar; no es la garantía de unicidad.
 
 ### 10.3 TB-02 — Listar tests por año
 
 **Endpoint:** `GET /api/test-breve-estado-de-animo/by-year/:year`.
 
-El controlador usa `parseInt` y sólo rechaza `NaN`; no impone un rango de años. El datasource consulta `fecha >= 1 de enero del año` y `< 1 de enero del año siguiente`, siempre junto con `idUsuario` del JWT, e incluye las cuatro subescalas. No especifica orden.
+El controlador usa `parseInt` y sólo rechaza `NaN`; no impone un rango de años. El datasource consulta `fechaDia >= 1 de enero del año` y `< 1 de enero del año siguiente`, siempre junto con `idUsuario` del JWT, e incluye las cuatro subescalas. No especifica orden.
 
 **Respuesta:** `200` con un array directo, no envuelto:
 
@@ -640,7 +641,7 @@ Si `notas` es `null` o string vacío, la construcción actual de la entidad pued
 
 **Endpoint:** `GET /api/test-breve-estado-de-animo/by-date/:year/:month/:day`.
 
-Valida que los tres segmentos sean números y que formen una fecha calendario real mediante `new Date(year, month-1, day)`. Busca sólo dentro del intervalo local del día y con el propietario del JWT.
+Valida que los tres segmentos sean números y que formen una fecha calendario real mediante `new Date(year, month-1, day)`. Busca por la clave compuesta `(idUsuario, fechaDia)` usando siempre el propietario del JWT.
 
 - encontrado: `200` con la forma de test anterior;
 - no encontrado: `200 null`;
@@ -654,7 +655,7 @@ Usa exactamente el mismo body y validación que la creación. La fecha que contr
 
 La operación:
 
-1. elimina todos los tests propios dentro del día indicado;
+1. elimina el test propio identificado por `(idUsuario, fechaDia)`;
 2. recrea el test y sus cuatro componentes con los valores nuevos.
 
 Ambos pasos usan el mismo cliente de una transacción interactiva Prisma. Si falla la recreación o cualquiera de sus creaciones anidadas, Prisma revierte también el borrado y conserva el test anterior. La recreación sólo se ejecuta cuando `deleteMany` informa que eliminó al menos un test propio; si no existía uno para ese usuario y fecha, responde `404 {"error":"Test breve no encontrado"}` sin crear un registro nuevo. En una edición exitosa responde `200 {"status":"success"}`.
@@ -663,7 +664,7 @@ Ambos pasos usan el mismo cliente de una transacción interactiva Prisma. Si fal
 
 **Endpoint:** `DELETE /api/test-breve-estado-de-animo/:year/:month/:day`.
 
-Valida la fecha calendario, localiza por intervalo diario **y** propietario y ejecuta `deleteMany`. Las relaciones de depresión, impulso y ansiedad se borran en cascada. Si no existe un test propio, no produce error; responde igualmente `200 {"status":"success"}`.
+Valida la fecha calendario, localiza por `(idUsuario, fechaDia)` y ejecuta `deleteMany`. Las relaciones de depresión, impulso y ansiedad se borran en cascada. Si no existe un test propio, no produce error; responde igualmente `200 {"status":"success"}`.
 
 ## 11. Registro cognitivo de estado de ánimo
 
@@ -897,10 +898,11 @@ Los roles `user`, `model` y `system`, igual que los roles de cuenta, deben exist
 El título debe existir, ser string y no ser exactamente `""`; un string de espacios pasa la validación. El datasource:
 
 1. comprueba que el usuario del JWT exista;
-2. busca un chat del mismo usuario con el mismo título;
-3. si no existe, crea el chat sin mensajes.
+2. busca un chat del mismo usuario con el mismo título como comprobación anticipada;
+3. si no existe, crea el chat sin mensajes;
+4. si una creación concurrente gana la carrera, transforma el `P2002` de Prisma en el mismo error de negocio.
 
-**Respuesta:** `201 {"result":"uuid-del-chat"}`. Un título duplicado exacto produce `400 Chat already exists`; usuario inexistente produce `400 User not found`. La unicidad se aplica en lógica de aplicación, no con constraint de base de datos.
+**Respuesta:** `201 {"result":"uuid-del-chat"}`. Un título duplicado exacto produce `400 Chat already exists`; usuario inexistente produce `400 User not found`. Un índice único compuesto `(idUsuario, title)` impide duplicados incluso ante peticiones simultáneas; usuarios distintos pueden reutilizar el mismo título.
 
 ### 12.3 CHAT-02 — Listar chats del usuario
 
@@ -1073,7 +1075,7 @@ Se registran principalmente errores inesperados, fallos de health, fallos de pro
 - Catálogos y componentes internos usan enteros autoincrementales.
 - `TipoRol`: `PROFESIONAL_ROL`, `USER_ROL`.
 - `TipoChatRol`: `model`, `user`, `system`.
-- Las fechas se persisten como `DateTime`; las migraciones actuales usan `TIMESTAMP(3)`. La lógica diaria construye límites con `new Date(...)` local en el proceso Node.
+- Las fechas de eventos se persisten como `DateTime` y las migraciones usan `TIMESTAMP(3)`. El test breve añade `fechaDia`, un `DATE` derivado del calendario local, para aplicar la unicidad diaria sin depender de rangos de timestamps.
 
 ### 14.2 Modelos de identidad
 
@@ -1086,13 +1088,13 @@ Se registran principalmente errores inesperados, fallos de health, fallos de pro
 
 | Modelo | Atributos | Relación |
 |---|---|---|
-| `TestBreveEstadoDeAnimo` | UUID, `idUsuario`, `fecha`, `notas` | Agregado raíz. |
+| `TestBreveEstadoDeAnimo` | UUID, `idUsuario`, `fecha`, `fechaDia`, `notas` | Agregado raíz; `(idUsuario, fechaDia)` es único. |
 | `Depresion` | cinco puntuaciones 0..4 | Uno-a-uno mediante `testBreveId` único. |
 | `ImpulsoSuicida` | dos puntuaciones 0..4 | Uno-a-uno mediante `testBreveId` único. |
 | `SentimientosAnsiedadFisica` | diez puntuaciones 0..4 | Uno-a-uno mediante `testBreveId` único. |
 | `SentimientosAnsiedadEmocional` | cinco puntuaciones 0..4 | Uno-a-uno mediante `testBreveId` único. |
 
-El schema no declara unicidad compuesta `(idUsuario, día)`; la regla diaria vive en el datasource.
+El schema declara unicidad compuesta `(idUsuario, fechaDia)`. La migración bloquea escrituras durante el cambio, comprueba que no existan duplicados históricos y aborta explícitamente si los encuentra, para no descartar datos clínicos de forma automática.
 
 ### 14.4 Modelos del registro cognitivo
 
@@ -1109,7 +1111,7 @@ El schema no declara unicidad compuesta `(idUsuario, día)`; la regla diaria viv
 
 | Modelo | Atributos principales | Relación |
 |---|---|---|
-| `Chat` | UUID, title, `idUsuario` | Agregado raíz del chat. |
+| `Chat` | UUID, title, `idUsuario` | Agregado raíz; `(idUsuario, title)` es único. |
 | `ChatRole` | ID, descripción única | Catálogo de roles de mensaje. |
 | `Mensaje` | UUID, text, `createdAt`, `roleId`, `chatId` | Muchos por chat. |
 | `Archivo` | UUID, `fileUri`, `mimeType`, `fileUrl`, `mensajeId` | Muchos por mensaje. |
@@ -1135,8 +1137,7 @@ La API administrativa nunca borra físicamente `User`: sólo cambia `isActive`, 
 
 ### 14.7 Restricciones e invariantes efectivas
 
-- Únicas en base de datos: email de usuario, descripción de roles, FK uno-a-uno de componentes y claves primarias.
-- Aplicadas sólo en aplicación: título de chat único por usuario y un test breve por usuario/día.
+- Únicas en base de datos: email de usuario, descripción de roles, FK uno-a-uno de componentes, claves primarias, `(idUsuario, fechaDia)` del test breve y `(idUsuario, title)` del chat.
 - Toda lectura/escritura privada de test, registro o chat incorpora el propietario derivado del JWT.
 - Los endpoints de eliminación privada prefieren no revelar existencia: recurso inexistente o ajeno suele terminar como éxito sin efecto.
 - Las creaciones anidadas de Prisma son atómicas dentro de una sola operación; los reemplazos de test breve y registro cognitivo envuelven delete y create en una transacción interactiva común.
@@ -1349,12 +1350,11 @@ Estos puntos no cambian la descripción funcional anterior; indican dónde el co
 
 ### 17.2 Consistencia y semántica HTTP
 
-1. Unicidad diaria de test y título de chat se valida en aplicación, por lo que existe ventana de carrera.
-2. Varias eliminaciones responden éxito si el recurso no existe o es ajeno; GET de registro no encontrado responde 200 sin cuerpo útil.
-3. Las páginas de token inválido usan 200; el estado se expresa en HTML.
-4. La creación de usuario responde una entidad provisional sin UUID/rol reales.
-5. Fechas del body sólo se validan como string y las fronteras diarias dependen de la zona local del proceso.
-6. El estado pendiente/completo depende únicamente del porcentaje posterior del grupo 1.
+1. Varias eliminaciones responden éxito si el recurso no existe o es ajeno; GET de registro no encontrado responde 200 sin cuerpo útil.
+2. Las páginas de token inválido usan 200; el estado se expresa en HTML.
+3. La creación de usuario responde una entidad provisional sin UUID/rol reales.
+4. Fechas del body sólo se validan como string y la derivación de `fechaDia` depende de la zona local del proceso.
+5. El estado pendiente/completo depende únicamente del porcentaje posterior del grupo 1.
 
 ### 17.3 Integraciones y archivos
 
@@ -1374,19 +1374,16 @@ Estos puntos no cambian la descripción funcional anterior; indican dónde el co
 
 ## 18. Pruebas y verificabilidad existente
 
-La configuración Jest ejecuta TypeScript ESM, limpia mocks y recolecta cobertura V8 en todas las corridas. Hay 11 archivos y 37 casos de prueba según la ejecución de esta revisión.
+La configuración Jest ejecuta TypeScript ESM, limpia mocks y recolecta cobertura V8 en todas las corridas. Hay 5 archivos y 15 casos de prueba según la ejecución de esta revisión.
 
 Cobertura funcional observable en pruebas:
 
-- health en estado `ok`, `degraded` y `error`;
-- middleware JWT, inyección de `req.user` y rechazo por rol/token;
-- error middleware, incluido fallo después de headers enviados;
-- límites/MIME de uploads, autenticación previa, error de streaming, persistencia atómica del turno y orden antes del cierre exitoso;
-- contenido y escape HTML de emails;
-- páginas HTML de validación/recuperación y codificación del token;
-- solicitud de recuperación en controller;
-- publicación de OpenAPI/Swagger;
-- desconexión Prisma y listeners de cierre.
+- reemplazo transaccional de test breve y registro cognitivo, incluido el caso inexistente que no debe crear;
+- respuestas `404` y documentación OpenAPI de ambos `PUT` estrictos;
+- persistencia del turno de chat antes de finalizar el stream y propagación del fallo;
+- escritura atómica de los mensajes de usuario y modelo;
+- schema y migración de unicidad, normalización de `fechaDia` y manejo de colisiones `P2002` para test y chat;
+- una prueba básica de funcionamiento de Jest.
 
 Áreas sin pruebas de comportamiento suficientes en la suite actual:
 
@@ -1395,18 +1392,15 @@ Cobertura funcional observable en pruebas:
 - persistencia, pertenencia y límites de día del test breve;
 - agregado y clasificación del registro cognitivo;
 - CRUD de chat y orden del historial contra datasource;
-- integración real de rollback de reemplazos y persistencia transaccional del stream;
+- integración real con PostgreSQL del rollback, los índices únicos y la persistencia transaccional del stream;
 - coherencia entre todas las rutas Express y OpenAPI.
 
 Resultado observado durante esta revisión:
 
+- `npx prisma validate`: exitoso;
+- `npx prisma generate`: exitoso con Prisma Client 7.9.1;
 - `npm run build`: exitoso;
-- `npm test -- --runInBand`: 8 suites pasaron y 3 fallaron; 27 tests pasaron y 10 agotaron el timeout;
-- `tests/auth_controller.test.ts` y `tests/chat_ia_upload.test.ts` montan las funciones factoría `AuthRouter.routes`/`ChatIARouter.routes` directamente, sin invocarlas con los servicios requeridos. Express las trata como middleware que no responde ni llama `next`, por lo que Supertest deja `TCPSERVERWRAP` abiertos y cada caso vence a los 5 segundos;
-- el caso `/health` de `tests/swagger.test.ts` construye las integraciones reales y espera Gemini, Cloudinary, mailer y PostgreSQL sin mocks ni timeout controlado; en esta ejecución superó el límite de Jest;
-- la ejecución focalizada de `tests/auth_controller.test.ts --detectOpenHandles` confirmó tres `TCPSERVERWRAP` originados en sus tres llamadas Supertest.
-
-Estos fallos son preexistentes y no fueron corregidos porque el alcance de esta tarea es documental. No deben interpretarse como validación exitosa de las áreas afectadas.
+- `npm test -- --runInBand`: 5 suites y 15 tests exitosos.
 
 Comandos definidos por el proyecto:
 

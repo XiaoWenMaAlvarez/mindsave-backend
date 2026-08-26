@@ -106,10 +106,7 @@ describe("Ediciones transaccionales", () => {
     expect(operations).toEqual(["delete", "create"]);
     expect(tx.testBreveEstadoDeAnimo.deleteMany).toHaveBeenCalledWith({
       where: {
-        fecha: {
-          gte: new Date(2026, 7, 26),
-          lt: new Date(2026, 7, 27),
-        },
+        fechaDia: new Date("2026-08-26T00:00:00.000Z"),
         idUsuario: "user-123",
       },
     });

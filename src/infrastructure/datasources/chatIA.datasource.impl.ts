@@ -4,7 +4,7 @@ import { prisma } from "../../data/index.js";
 import { TipoChatRol } from '../../generated/prisma/enums.js';
 import { ChatIaMapper } from '../mappers/init.js';
 import type { RoleIaDB, UserDB } from '../models/init.js';
-import type { Prisma } from '../../generated/prisma/client.js';
+import { Prisma } from '../../generated/prisma/client.js';
 
 type ChatWriteClient = Pick<Prisma.TransactionClient, "chat" | "chatRole" | "user">;
 
@@ -21,18 +21,25 @@ export class ChatIADatasourceImpl implements ChatIADatasource {
     });
     if(chat) throw CustomError.badRequest("Chat already exists");
 
-    const newChat = await prisma.chat.create({
-      data: {
-        title: title,
-        user: {
-          connect: { id: user.id }
-        },
-        mensajes: {
-          create: []
+    try {
+      const newChat = await prisma.chat.create({
+        data: {
+          title: title,
+          user: {
+            connect: { id: user.id }
+          },
+          mensajes: {
+            create: []
+          }
         }
+      });
+      return newChat.id;
+    } catch(error) {
+      if(error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        throw CustomError.badRequest("Chat already exists");
       }
-    });
-    return newChat.id;
+      throw error;
+    }
   }
 
 

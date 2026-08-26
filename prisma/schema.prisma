@@ -111,8 +111,10 @@ model TestBreveEstadoDeAnimo {
   idUsuario           String
   user                User                          @relation(fields: [idUsuario], references: [id], onDelete: Cascade)
   fecha               DateTime                      @default(now())
+  fechaDia            DateTime                      @db.Date
   notas               String?
 
+  @@unique([idUsuario, fechaDia], map: "test_breve_estado_de_animo_idUsuario_fechaDia_key")
   @@map("test_breve_estado_de_animo")
 }
 
@@ -366,6 +368,8 @@ model Chat {
   user        User     @relation(fields: [idUsuario], references: [id], onDelete: Cascade)
   
   mensajes   Mensaje[] 
+
+	@@unique([idUsuario, title], map: "chat_idUsuario_title_key")
 	@@map("chat")
 }
 

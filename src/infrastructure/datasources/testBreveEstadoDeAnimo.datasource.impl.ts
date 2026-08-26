@@ -1,7 +1,7 @@
 import { TestBreveEstadoDeAnimoDatasource } from '../../domain/datasources/init.js';
-import { TestBreveEstadoDeAnimo } from '../../domain/init.js';
+import { CustomError, TestBreveEstadoDeAnimo } from '../../domain/init.js';
 import { prisma } from "../../data/index.js";
-import type { Prisma } from "../../generated/prisma/client.js";
+import { Prisma } from "../../generated/prisma/client.js";
 
 type TestBreveWriteClient = Pick<Prisma.TransactionClient, "testBreveEstadoDeAnimo">;
 
@@ -16,6 +16,7 @@ export class TestBreveEstadoDeAnimoDatasourceImpl implements TestBreveEstadoDeAn
       data: {
         notas: testBreve.notas ?? null,
         fecha: testBreve.fecha,
+        fechaDia: this.getFechaDia(testBreve.fecha),
         user: {
           connect: { id: userId }
         },
@@ -41,16 +42,14 @@ export class TestBreveEstadoDeAnimoDatasourceImpl implements TestBreveEstadoDeAn
     });
     if(user == null) return;
 
-    const startDate = new Date(testBreve.fecha.getFullYear(), testBreve.fecha.getMonth(), testBreve.fecha.getDate());
-    const endDate = new Date(testBreve.fecha.getFullYear(), testBreve.fecha.getMonth(), testBreve.fecha.getDate() + 1);
+    const fechaDia = this.getFechaDia(testBreve.fecha);
 
-    const isTestRealizado = await prisma.testBreveEstadoDeAnimo.findFirst({
+    const isTestRealizado = await prisma.testBreveEstadoDeAnimo.findUnique({
       where: {
-        fecha: {
-          gte: startDate,
-          lt: endDate,
+        idUsuario_fechaDia: {
+          idUsuario: testBreve.idUsuario,
+          fechaDia,
         },
-        idUsuario: testBreve.idUsuario
       },
     });
 
@@ -59,16 +58,23 @@ export class TestBreveEstadoDeAnimoDatasourceImpl implements TestBreveEstadoDeAn
       return;
     }
 
-    await this.createTestBreveEstadoDeAnimo(prisma, testBreve, user.id);
+    try {
+      await this.createTestBreveEstadoDeAnimo(prisma, testBreve, user.id);
+    } catch(error) {
+      if(!this.isUniqueConstraintViolation(error)) throw error;
+
+      const updated = await this.editarTestBreveEstadoDeAnimoDeHoy(testBreve);
+      if(!updated) throw CustomError.badRequest("Test already exists");
+    }
   }
 
   async getTestBreveEstadoDeAnimoByYear(year: number, userId: string): Promise<TestBreveEstadoDeAnimo[]> {
-    const startDate = new Date(year, 0, 1);
-    const endDate = new Date(year + 1, 0, 1);
+    const startDate = new Date(Date.UTC(year, 0, 1));
+    const endDate = new Date(Date.UTC(year + 1, 0, 1));
 
     const tests = await prisma.testBreveEstadoDeAnimo.findMany({
       where: {
-        fecha: {
+        fechaDia: {
           gte: startDate,
           lt: endDate,
         },
@@ -86,8 +92,7 @@ export class TestBreveEstadoDeAnimoDatasourceImpl implements TestBreveEstadoDeAn
   }
 
   async editarTestBreveEstadoDeAnimoDeHoy(testBreve: TestBreveEstadoDeAnimo): Promise<boolean> {
-    const startDate = new Date(testBreve.fecha.getFullYear(), testBreve.fecha.getMonth(), testBreve.fecha.getDate());
-    const endDate = new Date(testBreve.fecha.getFullYear(), testBreve.fecha.getMonth(), testBreve.fecha.getDate() + 1);
+    const fechaDia = this.getFechaDia(testBreve.fecha);
 
     return prisma.$transaction(async (tx) => {
       const user = await tx.user.findUnique({
@@ -97,10 +102,7 @@ export class TestBreveEstadoDeAnimoDatasourceImpl implements TestBreveEstadoDeAn
 
       const deleted = await tx.testBreveEstadoDeAnimo.deleteMany({
         where: {
-          fecha: {
-            gte: startDate,
-            lt: endDate,
-          },
+          fechaDia,
           idUsuario: testBreve.idUsuario,
         },
       });
@@ -112,16 +114,14 @@ export class TestBreveEstadoDeAnimoDatasourceImpl implements TestBreveEstadoDeAn
   }
   
   async eliminarTestBreveEstadoDeAnimoDeHoy(year: number, month: number, day: number, userId: string): Promise<void> {
-    const startDate = new Date(year, month-1, day);
-    const endDate = new Date(year, month-1, day + 1);
+    const fechaDia = new Date(Date.UTC(year, month - 1, day));
 
-    const testParaEliminar = await prisma.testBreveEstadoDeAnimo.findFirst({
+    const testParaEliminar = await prisma.testBreveEstadoDeAnimo.findUnique({
       where: {
-        fecha: {
-          gte: startDate,
-          lt: endDate,
+        idUsuario_fechaDia: {
+          idUsuario: userId,
+          fechaDia,
         },
-        idUsuario: userId
       },
     });
 
@@ -129,26 +129,21 @@ export class TestBreveEstadoDeAnimoDatasourceImpl implements TestBreveEstadoDeAn
 
     await prisma.testBreveEstadoDeAnimo.deleteMany({
       where: {
-        fecha: {
-          gte: startDate,
-          lt: endDate,
-        },
+        fechaDia,
         idUsuario: userId
       }
     });
   }
   
   async getTodayTestBreveEstadoDeAnimo(year: number, month: number, day: number, userId: string): Promise<TestBreveEstadoDeAnimo | null> {
-    const startDate = new Date(year, month-1, day);
-    const endDate = new Date(year, month-1, day + 1);
+    const fechaDia = new Date(Date.UTC(year, month - 1, day));
 
-    const test = await prisma.testBreveEstadoDeAnimo.findFirst({
+    const test = await prisma.testBreveEstadoDeAnimo.findUnique({
       where: {
-        fecha: {
-          gte: startDate,
-          lt: endDate,
+        idUsuario_fechaDia: {
+          idUsuario: userId,
+          fechaDia,
         },
-        idUsuario: userId
       },
       include: {
         depresion: true,
@@ -160,6 +155,14 @@ export class TestBreveEstadoDeAnimoDatasourceImpl implements TestBreveEstadoDeAn
 
     if (!test) return null;
     return TestBreveEstadoDeAnimo.fromJson(test);
+  }
+
+  private getFechaDia(fecha: Date): Date {
+    return new Date(Date.UTC(fecha.getFullYear(), fecha.getMonth(), fecha.getDate()));
+  }
+
+  private isUniqueConstraintViolation(error: unknown): boolean {
+    return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
   }
   
 }
