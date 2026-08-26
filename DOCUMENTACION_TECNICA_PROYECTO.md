@@ -194,7 +194,7 @@ Respuestas del middleware:
 
 - `CustomError(statusCode, message)` se convierte en `{ "error": message }` con su status.
 - Cualquier otro error se registra y se convierte en `500 {"error":"Internal Server Error"}`.
-- Si ya se enviaron headers —caso posible durante streaming— se registra el error y se cierra la respuesta sin intentar enviar JSON ni cambiar el status.
+- Si ya se enviaron headers —caso posible durante streaming— se registra el error y se aborta la conexión sin intentar enviar JSON ni cambiar el status, de modo que el cliente no confunda un stream incompleto con una finalización normal.
 
 ## 7. Inventario efectivo de endpoints
 
@@ -977,16 +977,16 @@ Multer devuelve 400 para MIME no permitido, tamaño superior a 5 MiB, más de ci
 7. Los invierte a orden cronológico y los transforma al formato `Content[]` de Gemini.
 8. Crea un chat Gemini con la instrucción de sistema y envía el prompt actual más sus `fileData`.
 9. Itera el `AsyncGenerator`; por cada fragmento concatena `chunk.text` y lo escribe inmediatamente al response.
-10. Finaliza el response HTTP.
-11. Crea la entidad del mensaje `model` con el texto completo.
-12. Persiste primero el mensaje `user` —con archivos— y luego el mensaje `model`, verificando pertenencia en cada guardado.
+10. Crea la entidad del mensaje `model` con el texto completo.
+11. Persiste los mensajes `user` —con archivos— y `model` mediante una única creación anidada dentro de una transacción Prisma, después de verificar usuario, pertenencia del chat y roles.
+12. Sólo después de persistir ambos mensajes finaliza normalmente el response HTTP.
 13. En `finally`, elimina todos los archivos temporales locales.
 
 #### Fallos y consistencia
 
-- Si el stream falla después de haber escrito texto, el cliente conserva status 200 y el texto parcial; el middleware sólo registra y cierra la conexión.
-- Los mensajes se persisten **después** de `res.end()`. El cliente puede recibir una respuesta completa aunque falle la escritura en PostgreSQL.
-- Los dos mensajes se guardan de forma secuencial, no transaccional; puede quedar sólo el mensaje de usuario si falla el guardado del modelo.
+- Si el stream falla después de haber escrito texto, el cliente conserva el status 200 y el texto parcial ya transmitido, pero el middleware registra el error y aborta la conexión para señalar que el stream no terminó normalmente.
+- Si la persistencia falla después de haber escrito texto, no se ejecuta el cierre exitoso del controlador: el error se delega al middleware, que lo registra y aborta el stream sin intentar cambiar el status ni enviar JSON.
+- La creación conjunta es atómica: si falla cualquiera de los mensajes, sus archivos anidados o una validación previa, Prisma revierte el turno completo y no queda un mensaje aislado.
 - Si el stream falla antes de terminar, normalmente no se guarda ninguno de los dos mensajes.
 - Cloudinary y Gemini capturan sus errores de upload y devuelven arrays vacíos. Esto puede degradar silenciosamente los adjuntos o dejar copias remotas sin metadatos persistidos.
 - La comprobación de que el chat pertenece al usuario ocurre al recuperar historial, después de los uploads externos. Un UUID válido de chat ajeno puede provocar uploads antes de ser rechazado con `Chat not found`.
@@ -1270,8 +1270,8 @@ Para un diagrama de clases de dominio, conviene omitir routers y Prisma y usar l
 | `RegistroEstadoAnimoRepository` / datasource | `saveRegistroEstadoDeAnimo`, `getRegistroEstadoDeAnimoPendientes`, `getRegistroEstadoDeAnimoCompletos`, `getRegistroEstadoDeAnimoById`, `editarRegistroEstadoDeAnimo`, `eliminarRegistroEstadoDeAnimo` |
 | Casos de uso de registro | Una clase por operación, cada una con `execute(...)`. |
 | `ChatChatIA`, `MensajeChatIA`, `ArchivoChatIA` | `fromJson`, `toJson` |
-| `ChatIARepository` / datasource | `createNewChat`, `getChatsByUser`, `getMessagesFromChat`, `sendMessageToChat`, `deleteChat` |
-| `SendMessageToChatUseCase` | `createUserMessage`, `createGeminiMessage`, `saveMessage`, `streamResponse`; historial/upload son privados. |
+| `ChatIARepository` / datasource | `createNewChat`, `getChatsByUser`, `getMessagesFromChat`, `sendMessagesToChat`, `deleteChat` |
+| `SendMessageToChatUseCase` | `createUserMessage`, `createGeminiMessage`, `saveMessages`, `streamResponse`; historial/upload son privados. |
 | `GeminiService` | `checkHealth`, `uploadFiles`, `chatPromptUseCase` |
 | `FilesRepositoryService` | `checkHealth`, `uploadImages` |
 | `EmailService` | `checkHealth`, `sendEmail` |
@@ -1311,7 +1311,7 @@ El repositorio incluye `compose.yaml` sólo para PostgreSQL local, expuesto en 5
 | Test breve y registro cognitivo | PostgreSQL. No se envían automáticamente a Gemini ni a profesionales. |
 | Prompt e historial de chat | PostgreSQL y Gemini para generación. |
 | Adjunto de chat | Temporal local, Cloudinary, Gemini Files y metadatos en PostgreSQL. |
-| Respuesta IA | Se transmite al cliente y, si el post-stream tiene éxito, se persiste en PostgreSQL. |
+| Respuesta IA | Se transmite al cliente, se persiste en PostgreSQL al terminar la generación y sólo entonces se cierra normalmente el stream HTTP. |
 | Errores operacionales | Archivos de log; el diseño pretende no registrar passwords, JWT ni contenido clínico, aunque no hay una capa automática de redacción. |
 
 Para una vista de arquitectura de seguridad, los límites de confianza principales son cliente/API, API/PostgreSQL y API/cada proveedor externo. Los tests unitarios simulan esos proveedores en los escenarios cubiertos.
@@ -1359,11 +1359,10 @@ Estos puntos no cambian la descripción funcional anterior; indican dónde el co
 ### 17.3 Integraciones y archivos
 
 1. `EmailService.sendEmail` llama `transporter.sendMail()` sin `await`; retorna `true` antes de conocer el resultado asíncrono y su `catch` no captura rechazos posteriores.
-2. Mensajes de chat se persisten después de terminar la respuesta HTTP y sin transacción entre mensaje de usuario/modelo.
-3. Validar pertenencia del chat ocurre después de subir adjuntos a proveedores externos.
-4. Eliminar un chat no elimina archivos remotos; fallos de upload también pueden dejar objetos huérfanos.
-5. Cloudinary/Gemini convierten fallos de upload en arrays vacíos, con degradación silenciosa.
-6. No hay timeout o circuit breaker propio para health, email, uploads ni generación.
+2. Validar pertenencia del chat ocurre después de subir adjuntos a proveedores externos.
+3. Eliminar un chat no elimina archivos remotos; fallos de upload también pueden dejar objetos huérfanos.
+4. Cloudinary/Gemini convierten fallos de upload en arrays vacíos, con degradación silenciosa.
+5. No hay timeout o circuit breaker propio para health, email, uploads ni generación.
 
 ### 17.4 Arquitectura y mantenibilidad
 
@@ -1382,7 +1381,7 @@ Cobertura funcional observable en pruebas:
 - health en estado `ok`, `degraded` y `error`;
 - middleware JWT, inyección de `req.user` y rechazo por rol/token;
 - error middleware, incluido fallo después de headers enviados;
-- límites/MIME de uploads, autenticación previa y error de streaming;
+- límites/MIME de uploads, autenticación previa, error de streaming, persistencia atómica del turno y orden antes del cierre exitoso;
 - contenido y escape HTML de emails;
 - páginas HTML de validación/recuperación y codificación del token;
 - solicitud de recuperación en controller;

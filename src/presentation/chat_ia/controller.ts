@@ -84,12 +84,15 @@ export class ChatIAController {
         resultText += piece;
         res.write(piece);
       }
-      res.end();
 
       const geminiMessage = await sendMessageToChatUseCase.createGeminiMessage(resultText);
 
-      await sendMessageToChatUseCase.saveMessage(promptChatDTO!.chatId, promptChatDTO!.idUsuario, userMessage);
-      await sendMessageToChatUseCase.saveMessage(promptChatDTO!.chatId, promptChatDTO!.idUsuario, geminiMessage);
+      await sendMessageToChatUseCase.saveMessages(
+        promptChatDTO!.chatId,
+        promptChatDTO!.idUsuario,
+        [userMessage, geminiMessage],
+      );
+      res.end();
 
     } catch(error) {
       next(error);

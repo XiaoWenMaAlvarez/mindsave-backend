@@ -4,6 +4,9 @@ import { prisma } from "../../data/index.js";
 import { TipoChatRol } from '../../generated/prisma/enums.js';
 import { ChatIaMapper } from '../mappers/init.js';
 import type { RoleIaDB, UserDB } from '../models/init.js';
+import type { Prisma } from '../../generated/prisma/client.js';
+
+type ChatWriteClient = Pick<Prisma.TransactionClient, "chat" | "chatRole" | "user">;
 
 export class ChatIADatasourceImpl implements ChatIADatasource {
 
@@ -88,37 +91,45 @@ export class ChatIADatasourceImpl implements ChatIADatasource {
   }
 
 
-  async sendMessageToChat(idChat: string, idUsuario: string, mensaje: MensajeChatIA): Promise<void> {
-    const user = await this.getUserById(idUsuario);
+  async sendMessagesToChat(idChat: string, idUsuario: string, mensajes: readonly MensajeChatIA[]): Promise<void> {
+    await prisma.$transaction(async (tx) => {
+      const user = await this.getUserById(idUsuario, tx);
 
-    const chat = await prisma.chat.findFirst({
-      where: { 
-        idUsuario: user.id,
-        id: idChat
+      const chat = await tx.chat.findFirst({
+        where: {
+          idUsuario: user.id,
+          id: idChat
+        }
+      });
+      if(chat == null) throw CustomError.badRequest("Chat not found");
+
+      const messagesWithRoles: Array<{ mensaje: MensajeChatIA; role: RoleIaDB }> = [];
+      for(const mensaje of mensajes) {
+        messagesWithRoles.push({
+          mensaje,
+          role: await this.getMessageRole(mensaje.role, tx),
+        });
       }
-    });
-    if(chat == null) throw CustomError.badRequest("Chat not found");
 
-    const role = await this.getMessageRole(mensaje.role);
-
-    await prisma.chat.update({
-      where: { id: chat.id },
-      data: {
-        mensajes: {
-          create: {
-            text: mensaje.text,
-            createdAt: mensaje.createdAt,
-            role: { connect: { id: role.id } },
-            archivos: mensaje.archivos.length > 0 ? {
-              create: mensaje.archivos.map(archivo => ({
-                fileUri: archivo.fileUri,
-                mimeType: archivo.mimeType,
-                fileUrl: archivo.fileUrl
-              }))
-            } : {}
+      await tx.chat.update({
+        where: { id: chat.id },
+        data: {
+          mensajes: {
+            create: messagesWithRoles.map(({ mensaje, role }) => ({
+              text: mensaje.text,
+              createdAt: mensaje.createdAt,
+              role: { connect: { id: role.id } },
+              archivos: mensaje.archivos.length > 0 ? {
+                create: mensaje.archivos.map(archivo => ({
+                  fileUri: archivo.fileUri,
+                  mimeType: archivo.mimeType,
+                  fileUrl: archivo.fileUrl
+                }))
+              } : {}
+            }))
           }
         }
-      }
+      });
     });
   }
 
@@ -132,7 +143,7 @@ export class ChatIADatasourceImpl implements ChatIADatasource {
     });
   }
 
-  private async getMessageRole(roleDescription: string): Promise<RoleIaDB> {
+  private async getMessageRole(roleDescription: string, client: ChatWriteClient = prisma): Promise<RoleIaDB> {
     let tipoRole: TipoChatRol;
     if(roleDescription === "model") {
       tipoRole = TipoChatRol.model
@@ -142,7 +153,7 @@ export class ChatIADatasourceImpl implements ChatIADatasource {
       throw CustomError.badRequest("Role not found");
     }
 
-    const role = await prisma.chatRole.findUnique({
+    const role = await client.chatRole.findUnique({
       where: {
         description: tipoRole
       }
@@ -151,8 +162,8 @@ export class ChatIADatasourceImpl implements ChatIADatasource {
     return role;
   }
   
-  private async getUserById(idUsuario: string): Promise<UserDB>  {
-    const user = await prisma.user.findUnique({
+  private async getUserById(idUsuario: string, client: Pick<ChatWriteClient, "user"> = prisma): Promise<UserDB>  {
+    const user = await client.user.findUnique({
       where: {id: idUsuario}
     });
     if(user == null) throw CustomError.badRequest("User not found");

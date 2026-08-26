@@ -17,8 +17,8 @@ export class ChatIARepositoryImpl implements ChatIARepository {
   getMessagesFromChat(idChat: string, idUsuario: string, limit?: number): Promise<ChatChatIA> {
     return this.chatIADatasource.getMessagesFromChat(idChat, idUsuario, limit);
   }
-  sendMessageToChat(idChat: string, idUsuario: string, mensaje: MensajeChatIA): Promise<void> {
-    return this.chatIADatasource.sendMessageToChat(idChat, idUsuario, mensaje);
+  sendMessagesToChat(idChat: string, idUsuario: string, mensajes: readonly MensajeChatIA[]): Promise<void> {
+    return this.chatIADatasource.sendMessagesToChat(idChat, idUsuario, mensajes);
   }
   deleteChat(idChat: string, idUsuario: string): Promise<void> {
     return this.chatIADatasource.deleteChat(idChat, idUsuario);

@@ -43,8 +43,8 @@ export class SendMessageToChatUseCase {
     });
   }
 
-  async saveMessage(idChat: string, idUsuario: string, mensaje: MensajeChatIA): Promise<void> {
-    return await this.chatIArepository.sendMessageToChat(idChat, idUsuario, mensaje);
+  async saveMessages(idChat: string, idUsuario: string, mensajes: readonly MensajeChatIA[]): Promise<void> {
+    return await this.chatIArepository.sendMessagesToChat(idChat, idUsuario, mensajes);
   }
 
 

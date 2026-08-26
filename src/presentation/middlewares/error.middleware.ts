@@ -13,7 +13,7 @@ export class ErrorMiddleware {
     if (res.headersSent) {
       Logger.error(`Error after headers were sent: ${error}`);
       if (!res.writableEnded) {
-        res.end();
+        res.destroy();
       }
       return;
     }
