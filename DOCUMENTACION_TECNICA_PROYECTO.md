@@ -92,13 +92,14 @@ En `SIGINT` o `SIGTERM` deja de aceptar conexiones HTTP, desconecta Prisma y ter
 Todas se validan al importar la configuración, por lo que la aplicación no arranca si falta cualquiera de ellas:
 
 - aplicación: `PORT`, `NODE_ENV`, `WEBSERVICE_URL`;
-- PostgreSQL: `POSTGRES_URL`, `POSTGRES_USER`, `POSTGRES_DB`, `POSTGRES_PASSWORD`;
+- PostgreSQL/Neon: `DATABASE_URL` pooled para la aplicación y `DATABASE_URL_UNPOOLED` directa para Prisma CLI;
+- PostgreSQL local con Docker Compose: `POSTGRES_USER`, `POSTGRES_DB`, `POSTGRES_PASSWORD`;
 - autenticación: `JWT_SEED`, `JWT_EMAIL_VERIFICATION_SEED`, `JWT_PASSWORD_RESET_SEED`;
 - correo: `MAILER_SERVICE`, `MAILER_EMAIL`, `MAILER_SECRET_KEY`;
 - Gemini: `GEMINI_API_KEY`;
 - Cloudinary: `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_CLOUD_NAME`.
 
-`DATABASE_URL` aparece en `.env.example`, pero no es consumida por el código actual. Prisma CLI y la aplicación usan `POSTGRES_URL`.
+La aplicación consume `DATABASE_URL` mediante `@prisma/adapter-pg`. Prisma CLI y el seed prefieren `DATABASE_URL_UNPOOLED` y sólo usan `DATABASE_URL` como fallback.
 
 ## 5. Arquitectura de implementación
 

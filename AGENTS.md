@@ -90,9 +90,9 @@ el controlador.
 6. Inicia el servidor con `npm run dev`. La API usa el puerto de `PORT` y el
    health check está en `GET /health`.
 
-`POSTGRES_URL` es la conexión que consumen Prisma CLI y la aplicación.
-`DATABASE_URL` figura en `.env.example`, pero el código actual no la usa. La
-importación de `envs.ts` valida de forma inmediata todas las variables listadas,
+`DATABASE_URL` es la conexión pooled que consume la aplicación y
+`DATABASE_URL_UNPOOLED` es la conexión directa que consume Prisma CLI. La
+importación de `envs.ts` valida de forma inmediata las variables de la aplicación,
 por lo que incluso pruebas que importan rutas necesitan un entorno completo.
 
 No ejecutes migraciones, seeds ni scripts de inicialización contra bases

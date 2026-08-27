@@ -4,7 +4,17 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, TipoChatRol, TipoRol } from "../src/generated/prisma/client.js";
 import { bcryptAdapter } from "../src/config/bcrypt.adapter.js";
 
-const connectionString = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
+
+const connectionString = process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL;
+
+const adminName = process.env.ADMIN_NAME;
+const adminEmail = process.env.ADMIN_EMAIL;
+const adminPassword = process.env.ADMIN_PASSWORD;
+
+if (!adminName || !adminEmail || !adminPassword) {
+  throw new Error("Faltan variables de entorno del admin");
+}
+
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
@@ -36,31 +46,35 @@ async function main() {
     });
   }
 
-  const adminPassword = bcryptAdapter.hash("administrador");
+  if (adminName && adminEmail && adminPassword) {
+    const adminPasswordHash = bcryptAdapter.hash(adminPassword);
+  
 
-  await prisma.user.upsert({
-    where: { email: "admin@mindsave.cl" },
-    update: {
-      name: "admin",
-      password: adminPassword,
-      emailVerified: true,
-      isActive: true,
-      role: {
-        connect: { description: TipoRol.PROFESIONAL_ROL },
+    await prisma.user.upsert({
+      where: { email: adminEmail },
+      update: {
+        name: adminName,
+        password: adminPasswordHash,
+        emailVerified: true,
+        isActive: true,
+        role: {
+          connect: { description: TipoRol.PROFESIONAL_ROL },
+        },
       },
-    },
-    create: {
-      name: "admin",
-      email: "admin@mindsave.cl",
-      password: adminPassword,
-      emailVerified: true,
-      isActive: true,
-      role: {
-        connect: { description: TipoRol.PROFESIONAL_ROL },
+      create: {
+        name: adminName,
+        email: adminEmail,
+        password: adminPasswordHash,
+        emailVerified: true,
+        isActive: true,
+        role: {
+          connect: { description: TipoRol.PROFESIONAL_ROL },
+        },
       },
-    },
-  });
+    });
+  }
 }
+
 
 main()
   .catch((error) => {
