@@ -44,7 +44,10 @@ export class Server {
     this.app.use( express.json() );
 
     this.app.use(cors({
-      origin: 'http://localhost:5173', // O '*' en desarrollo
+      origin: [
+        "https://mindsave-admin.vercel.app",
+        "http://localhost:5173"
+      ],
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
       credentials: true
