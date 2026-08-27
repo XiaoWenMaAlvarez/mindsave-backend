@@ -20,7 +20,7 @@
   "main": "app.js",
   "scripts": {
     "dev": "nodemon",
-    "build": "rimraf ./dist && tsc",
+    "build": "prisma generate && rimraf ./dist && tsc",
     "start": "npm run build && node dist/app.js",
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --watchAll",
