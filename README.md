@@ -18,6 +18,19 @@ npx.cmd prisma db seed
 
 No ejecutes migraciones ni seed contra otra rama o proyecto sin verificar antes el contexto con `neon status`.
 
+# Despliegue en Render
+
+Configura el Web Service con runtime Node y estos comandos:
+
+```text
+Build Command: npm ci --include=dev && npm run build && npm prune --omit=dev
+Start Command: npm start
+```
+
+El build instala temporalmente las dependencias de desarrollo, genera Prisma Client y compila TypeScript. Después elimina las dependencias de desarrollo; `npm start` sólo ejecuta `dist/app.js`.
+
+Define en Render las variables de `.env.example`. Usa `DATABASE_URL` pooled para la aplicación y `DATABASE_URL_UNPOOLED` directa para Prisma. Después de cambiar los comandos, ejecuta **Clear build cache & deploy**.
+
 # Base de datos local
 
 - Abrir la terminal y dirigirse a la ruta del backend.
