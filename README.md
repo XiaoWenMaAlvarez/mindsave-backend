@@ -47,14 +47,14 @@ docker compose up -d
 - Instalar las dependencias reproducibles de Node.js:
 
 ```powershell
-npm.cmd ci
+npm i
 ```
 
 - Aplicar las migraciones existentes y generar el cliente:
 
 ```powershell
-npx.cmd prisma migrate dev
-npx.cmd prisma generate
+npx prisma migrate dev
+npx prisma generate
 ```
 
 - Insertar los registros por defecto con `npx.cmd prisma db seed`.
@@ -62,7 +62,11 @@ npx.cmd prisma generate
 - Ejecutar el servidor:
 
 ```powershell
-npm.cmd run dev
+npx run dev
+```
+
+```powershell
+npx prisma db seed
 ```
 
 - Probar los endpoints con Postman

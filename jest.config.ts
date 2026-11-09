@@ -21,6 +21,9 @@ const config: Config = {
     "^(\\.{1,2}/.*)\\.js$": "$1"
   },
 
+  // Las pruebas de API requieren el servidor levantado; se ejecutan con `npm run test:api`.
+  testPathIgnorePatterns: ["/node_modules/", "<rootDir>/tests/api/"],
+
   clearMocks: true,
 
   collectCoverage: true,
